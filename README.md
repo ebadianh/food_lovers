@@ -22,5 +22,5 @@ FLUSH PRIVILEGES;
 
 ### 2. Build commands
 
-dotnet build </br>
+dotnet build 
 dotnet run
