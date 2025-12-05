@@ -1,0 +1,86 @@
+using MySql.Data.MySqlClient;
+namespace server;
+
+// SELECT, reader
+// INSERT, parameters
+class Users
+
+{
+    static List<User> users = new();
+    public record Get_Data(int id, string Email, string Password);
+    //List<Get_Data> -> asynd Task<List<Get_Data>> Get()
+    public static async Task<List<Get_Data>> Get(Config config)
+    {
+        List<Get_Data> result = new();
+        string query = "SELECT id, email, password FROM users";
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+            while (reader.Read())
+            {
+                result.Add(new(reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+            }
+        }
+        return result;
+    }
+    public record GetById_Data(string Email);
+    public static async Task<GetById_Data?> GetById(int id, Config config) //En del av vår path
+    {
+        GetById_Data? result = null;
+        string query = "SELECT email FROM users WHERE id = @id";
+        var parameters = new MySqlParameter[]
+        {
+            new("@id", id)
+        };
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+        {
+            if (reader.Read())
+            {
+                result = new(reader.GetString(0));
+            }
+        }
+        return result;
+    }
+
+    public record Post_Args(string Email, string Password); // har vi en void så blir det async task
+    public static async Task Post(User user, Config config)
+    {
+        string query = "INSERT INTO users(email, password) VALUES(@email, @password)";
+
+        var parameters = new MySqlParameter[]
+    {
+new("@email", user.Email),
+new("@password", user.Password)
+        };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
+
+    public static async Task Delete(int id, Config config)
+    {
+        string query = "DELETE FROM users WHERE id = @id";
+        var parameters = new MySqlParameter[] { new("@id", id) };
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
+    public record Put_Args(int Id, string Email, string Password);
+
+    public static async Task Put(Put_Args user, Config config)
+    {
+        string query = """
+        UPDATE users 
+        SET email = @email, password = @password 
+        WHERE id = @id
+    """;
+
+        var parameters = new MySqlParameter[]
+        {
+        new("@id", user.Id),
+        new("@email", user.Email),
+        new("@password", user.Password),
+        };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
+
+}
+record User(string Email, string Password);
+
