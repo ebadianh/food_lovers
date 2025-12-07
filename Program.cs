@@ -38,7 +38,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 app.MapGet("/bookings", Bookings.GetAll);
 
 // CRUD methods for searchings
-app.MapGet("/searchings", Searchings.GetAll_Data);
+app.MapGet("/searchings", Searchings.GetAllPackages);
 
 // special, reset db
 app.MapDelete("/db", db_reset_to_default);
@@ -78,7 +78,7 @@ async Task db_reset_to_default(Config config)
         -- COUNTRY table
         CREATE TABLE COUNTRY (
             CountryID INT PRIMARY KEY AUTO_INCREMENT,
-            Country VARCHAR(100) NOT NULL,
+            Name VARCHAR(100) NOT NULL,
             Cuisine VARCHAR(100)
         );
 
