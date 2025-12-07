@@ -37,6 +37,8 @@ app.MapDelete("/users/{id}", Users.Delete);
 // CRUD methods for bookings
 app.MapGet("/bookings", Bookings.GetAll);
 
+// CRUD methods for searchings
+app.MapGet("/searchings", Searchings.GetAll_Data);
 
 // special, reset db
 app.MapDelete("/db", db_reset_to_default);
@@ -51,7 +53,9 @@ async Task db_reset_to_default(Config config)
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
 
     // Create all tables
-    string users_table = """
+    string tables = """
+
+        -- USERS table
         CREATE TABLE users
         (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -69,9 +73,119 @@ async Task db_reset_to_default(Config config)
                 AND password REGEXP '.*[a-z].*'
                 AND password REGEXP '.*[0-9].*'
             )
-        )
+        );
+
+        -- COUNTRY table
+        CREATE TABLE COUNTRY (
+            CountryID INT PRIMARY KEY AUTO_INCREMENT,
+            Country VARCHAR(100) NOT NULL,
+            Cuisine VARCHAR(100)
+        );
+
+        -- DESTINATIONS table
+        CREATE TABLE DESTINATIONS (
+            DestinationID INT PRIMARY KEY AUTO_INCREMENT,
+            CountryID INT NOT NULL,
+            City VARCHAR(100) NOT NULL,
+            Description TEXT,
+            FOREIGN KEY (CountryID) REFERENCES COUNTRY(CountryID)
+        );
+
+        -- TRIPPACKAGES table
+        CREATE TABLE TRIPPACKAGES (
+            PackageID INT PRIMARY KEY AUTO_INCREMENT,
+            PackageName VARCHAR(150) NOT NULL,
+            Description TEXT,
+            PricePerPerson DECIMAL(10, 2) NOT NULL
+        );
+
+        -- PACKAGEITINERARY table (junction table)
+        CREATE TABLE PACKAGEITINERARY (
+            PackageID INT NOT NULL,
+            DestinationID INT NOT NULL,
+            StopOrder INT NOT NULL,
+            Nights TINYINT NOT NULL,
+            PRIMARY KEY (PackageID, DestinationID),
+            FOREIGN KEY (PackageID) REFERENCES TRIPPACKAGES(PackageID),
+            FOREIGN KEY (DestinationID) REFERENCES DESTINATIONS(DestinationID)
+        );
+
+        -- HOTELS table
+        CREATE TABLE HOTELS (
+            HotelID INT PRIMARY KEY AUTO_INCREMENT,
+            DestinationID INT NOT NULL,
+            HotelName VARCHAR(150) NOT NULL,
+            Description TEXT,
+            Stars TINYINT CHECK (Stars BETWEEN 1 AND 5),
+            DistanceToCenter DECIMAL(5, 2),
+            FOREIGN KEY (DestinationID) REFERENCES DESTINATIONS(DestinationID)
+        );
+
+        -- POI_DISTANCES table
+        CREATE TABLE POI_DISTANCES (
+            POI_DistancesID INT PRIMARY KEY AUTO_INCREMENT,
+            Name VARCHAR(150) NOT NULL
+        );
+
+        -- HOTELS_to_POI_DISTANCES table (junction table)
+        CREATE TABLE HOTELS_to_POI_DISTANCES (
+            HOTELS_to_POI_DISTANCESID INT PRIMARY KEY AUTO_INCREMENT,
+            HotelID INT NOT NULL,
+            POI_DISTANCESID INT NOT NULL,
+            Distance DECIMAL(5, 2),
+            FOREIGN KEY (HotelID) REFERENCES HOTELS(HotelID),
+            FOREIGN KEY (POI_DISTANCESID) REFERENCES POI_DISTANCES(POI_DistancesID)
+        );
+
+        -- ROOMS table
+        CREATE TABLE ROOMS (
+            RoomID INT PRIMARY KEY AUTO_INCREMENT,
+            HotelID INT NOT NULL,
+            Capacity INT NOT NULL,
+            FOREIGN KEY (HotelID) REFERENCES HOTELS(HotelID)
+        );
+
+        -- FACILITIES table
+        CREATE TABLE FACILITIES (
+            FacilityID INT PRIMARY KEY AUTO_INCREMENT,
+            FacilityName VARCHAR(100) NOT NULL
+        );
+
+        -- ACCOMMODATIONFACILITIES table (junction table)
+        CREATE TABLE ACCOMMODATIONFACILITIES (
+            HotelID INT NOT NULL,
+            FacilityID INT NOT NULL,
+            PRIMARY KEY (HotelID, FacilityID),
+            FOREIGN KEY (HotelID) REFERENCES HOTELS(HotelID),
+            FOREIGN KEY (FacilityID) REFERENCES FACILITIES(FacilityID)
+        );
+
+        -- BOOKINGS table
+        CREATE TABLE BOOKINGS (
+            BookingID INT PRIMARY KEY AUTO_INCREMENT,
+            UserID INT NOT NULL,
+            PackageID INT NOT NULL,
+            Checkin DATE NOT NULL,
+            Checkout DATE NOT NULL,
+            NumberOfTravelers INT NOT NULL,
+            Status ENUM('pending', 'confirmed', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
+            FOREIGN KEY (UserID) REFERENCES USERS(id),
+            FOREIGN KEY (PackageID) REFERENCES TRIPPACKAGES(PackageID)
+        );
+
+        -- BOOKEDROOMS table
+        CREATE TABLE BOOKEDROOMS (
+            BookedRoomID INT PRIMARY KEY AUTO_INCREMENT,
+            BookingID INT NOT NULL,
+            RoomID INT NOT NULL,
+            Quantity INT NOT NULL,
+            PricePerNight DECIMAL(10, 2) NOT NULL,
+            FOREIGN KEY (BookingID) REFERENCES BOOKINGS(BookingID),
+            FOREIGN KEY (RoomID) REFERENCES ROOMS(RoomID)
+        );
+
     """;
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, users_table);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
     
 }
 
