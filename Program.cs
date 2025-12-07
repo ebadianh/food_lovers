@@ -1,6 +1,7 @@
 using MySql.Data.MySqlClient;
 using server;
 
+
 var builder = WebApplication.CreateBuilder(args);
 // 127.0.0.1:3306 (default port)
 
