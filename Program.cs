@@ -63,12 +63,6 @@ async Task db_reset_to_default(Config config)
             CONSTRAINT chk_email_format
                 CHECK (email LIKE '%_@_%._%'),
 
-            CONSTRAINT chk_password_strength
-                CHECK (LENGTH(password) >= 8
-                AND password REGEXP '.*[A-Z].*'
-                AND password REGEXP '.*[a-z].*'
-                AND password REGEXP '.*[0-9].*'
-            )
         )
     """;
     await MySqlHelper.ExecuteNonQueryAsync(config.db, users_table);
