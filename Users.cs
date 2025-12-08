@@ -44,12 +44,14 @@ class Users
     public record Post_Args(string Email, string Password); // har vi en void så blir det async task
     public static async Task Post(User user, Config config)
     {
-        string query = "INSERT INTO users(email, password) VALUES(@email, @password)";
+        string query = "INSERT INTO users(firstname, lastname, email, password) VALUES(@firstname, @lastname, @email, @password)";
 
         var parameters = new MySqlParameter[]
     {
-new("@email", user.Email),
-new("@password", user.Password)
+        new("@firstname", user.Firstname),
+        new("@lastname", user.Lastname),
+        new("@email", user.Email),
+        new("@password", user.Password)
         };
 
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
@@ -82,5 +84,5 @@ new("@password", user.Password)
     }
 
 }
-record User(string Email, string Password);
+record User(string Firstname, string Lastname, string Email, string Password);
 

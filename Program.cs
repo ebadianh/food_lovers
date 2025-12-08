@@ -30,7 +30,7 @@ app.MapDelete("/login", Login.Delete);
 // CRUD examples (user resource)
 app.MapGet("/users", Users.Get);
 app.MapGet("/users/{id}", Users.GetById);
-app.MapPost("/users", Users.Post);
+app.MapPost("/users", Users.Post); //As an anomymous user I want to create an account, so I that can become a registered user
 app.MapPut("/users/{id}", Users.Put);
 app.MapDelete("/users/{id}", Users.Delete);
 
@@ -55,13 +55,18 @@ async Task db_reset_to_default(Config config)
         CREATE TABLE users
         (
             id INT PRIMARY KEY AUTO_INCREMENT,
+            firstname varchar(256) NOT NULL,
+            lastname varchar(256) NOT NULL,
             email varchar(256) NOT NULL UNIQUE,
-            password TEXT
+            password varchar(256) NOT NULL,
+            
+            CONSTRAINT chk_email_format
+                CHECK (email LIKE '%_@_%._%'),
+
         )
     """;
     await MySqlHelper.ExecuteNonQueryAsync(config.db, users_table);
-
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, password) VALUES ('lukas@gmail.com', 'password123')");
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, password) VALUES ('manni@gmail.com', 'password123')");
+    
 }
+
 
