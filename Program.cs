@@ -55,129 +55,118 @@ async Task db_reset_to_default(Config config)
     // Create all tables
     string tables = """
 
-        -- USERS table
-        CREATE TABLE users
-        (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            firstname varchar(256) NOT NULL,
-            lastname varchar(256) NOT NULL,
-            email varchar(256) NOT NULL UNIQUE,
-            password varchar(256) NOT NULL,
-            
-            CONSTRAINT chk_email_format
-                CHECK (email LIKE '%_@_%._%'),
+        CREATE TABLE Users (
+        id INT PRIMARY KEY,
+        firstname VARCHAR(255),
+        lastname VARCHAR(255),
+        email VARCHAR(255),
+        password VARCHAR(255)
+    );
 
-     
-        );
+    CREATE TABLE Admins (
+        id INT PRIMARY KEY,
+        username VARCHAR(255),
+        password VARCHAR(255)
+    );
 
-        -- COUNTRY table
-        CREATE TABLE COUNTRY (
-            CountryID INT PRIMARY KEY AUTO_INCREMENT,
-            Name VARCHAR(100) NOT NULL,
-            Cuisine VARCHAR(100)
-        );
+    CREATE TABLE Countries (
+        id INT PRIMARY KEY,
+        name VARCHAR(255),
+        cuisine VARCHAR(255)
+    );
 
-        -- DESTINATIONS table
-        CREATE TABLE DESTINATIONS (
-            DestinationID INT PRIMARY KEY AUTO_INCREMENT,
-            CountryID INT NOT NULL,
-            City VARCHAR(100) NOT NULL,
-            Description TEXT,
-            FOREIGN KEY (CountryID) REFERENCES COUNTRY(CountryID)
-        );
+    CREATE TABLE Destinations (
+        id INT PRIMARY KEY,
+        countryid INT,
+        city VARCHAR(255),
+        description TEXT,
+        FOREIGN KEY (countryid) REFERENCES Countries(id)
+    );
 
-        -- TRIPPACKAGES table
-        CREATE TABLE TRIPPACKAGES (
-            PackageID INT PRIMARY KEY AUTO_INCREMENT,
-            PackageName VARCHAR(150) NOT NULL,
-            Description TEXT,
-            PricePerPerson DECIMAL(10, 2) NOT NULL
-        );
+    CREATE TABLE Trippackages (
+        id INT PRIMARY KEY,
+        name VARCHAR(255),
+        desciption TEXT,
+        price DECIMAL(10,2)
+    );
 
-        -- PACKAGEITINERARY table (junction table)
-        CREATE TABLE PACKAGEITINERARY (
-            PackageID INT NOT NULL,
-            DestinationID INT NOT NULL,
-            StopOrder INT NOT NULL,
-            Nights TINYINT NOT NULL,
-            PRIMARY KEY (PackageID, DestinationID),
-            FOREIGN KEY (PackageID) REFERENCES TRIPPACKAGES(PackageID),
-            FOREIGN KEY (DestinationID) REFERENCES DESTINATIONS(DestinationID)
-        );
+    CREATE TABLE PackageItinerary (
+        packageid INT,
+        destinationid INT,
+        stopOrder INT,
+        nights TINYINT,
+        PRIMARY KEY (packageid, destinationid),
+        FOREIGN KEY (packageid) REFERENCES TRIPPACKAGES(id),
+        FOREIGN KEY (destinationid) REFERENCES DESTINATIONS(id)
+    );
 
-        -- HOTELS table
-        CREATE TABLE HOTELS (
-            HotelID INT PRIMARY KEY AUTO_INCREMENT,
-            DestinationID INT NOT NULL,
-            HotelName VARCHAR(150) NOT NULL,
-            Description TEXT,
-            Stars TINYINT CHECK (Stars BETWEEN 1 AND 5),
-            DistanceToCenter DECIMAL(5, 2),
-            FOREIGN KEY (DestinationID) REFERENCES DESTINATIONS(DestinationID)
-        );
+    CREATE TABLE Hotels (
+        id INT PRIMARY KEY,
+        destinationid INT,
+        name VARCHAR(255),
+        distance DECIMAL(10,2),
+        description TEXT,
+        stars TINYINT,
+        FOREIGN KEY (destinationid) REFERENCES Destinations(id)
+    );
 
-        -- POI_DISTANCES table
-        CREATE TABLE POI_DISTANCES (
-            POI_DistancesID INT PRIMARY KEY AUTO_INCREMENT,
-            Name VARCHAR(150) NOT NULL
-        );
+    CREATE TABLE Rooms (
+        id INT PRIMARY KEY,
+        hotelid INT,
+        number INT,
+        capacity INT,
+        FOREIGN KEY (hotelid) REFERENCES HOTELS(id)
+    );
 
-        -- HOTELS_to_POI_DISTANCES table (junction table)
-        CREATE TABLE HOTELS_to_POI_DISTANCES (
-            HOTELS_to_POI_DISTANCESID INT PRIMARY KEY AUTO_INCREMENT,
-            HotelID INT NOT NULL,
-            POI_DISTANCESID INT NOT NULL,
-            Distance DECIMAL(5, 2),
-            FOREIGN KEY (HotelID) REFERENCES HOTELS(HotelID),
-            FOREIGN KEY (POI_DISTANCESID) REFERENCES POI_DISTANCES(POI_DistancesID)
-        );
+    CREATE TABLE PoI (
+        id INT PRIMARY KEY,
+        name VARCHAR(255),
+        distance DECIMAL(10,2)
+    );
 
-        -- ROOMS table
-        CREATE TABLE ROOMS (
-            RoomID INT PRIMARY KEY AUTO_INCREMENT,
-            HotelID INT NOT NULL,
-            Capacity INT NOT NULL,
-            FOREIGN KEY (HotelID) REFERENCES HOTELS(HotelID)
-        );
+    CREATE TABLE Hotels_to_PoI (
+        hotelid INT,
+        poiid INT,
+        PRIMARY KEY (hotelid, poiid),
+        FOREIGN KEY (hotelid) REFERENCES HOTELS(id),
+        FOREIGN KEY (poiid) REFERENCES POI(id)
+    );
 
-        -- FACILITIES table
-        CREATE TABLE FACILITIES (
-            FacilityID INT PRIMARY KEY AUTO_INCREMENT,
-            FacilityName VARCHAR(100) NOT NULL
-        );
+    CREATE TABLE Facilities (
+        id INT PRIMARY KEY,
+        name VARCHAR(255)
+    );
 
-        -- ACCOMMODATIONFACILITIES table (junction table)
-        CREATE TABLE ACCOMMODATIONFACILITIES (
-            HotelID INT NOT NULL,
-            FacilityID INT NOT NULL,
-            PRIMARY KEY (HotelID, FacilityID),
-            FOREIGN KEY (HotelID) REFERENCES HOTELS(HotelID),
-            FOREIGN KEY (FacilityID) REFERENCES FACILITIES(FacilityID)
-        );
+    CREATE TABLE Accomodations_by_Facilities (
+        hotel_id INT,
+        facility_id INT,
+        PRIMARY KEY (hotelid, facilityid),
+        FOREIGN KEY (hotelid) REFERENCES HOTELS(id),
+        FOREIGN KEY (facilityid) REFERENCES FACILITIES(id)
+    );
 
-        -- BOOKINGS table
-        CREATE TABLE BOOKINGS (
-            BookingID INT PRIMARY KEY AUTO_INCREMENT,
-            UserID INT NOT NULL,
-            PackageID INT NOT NULL,
-            Checkin DATE NOT NULL,
-            Checkout DATE NOT NULL,
-            NumberOfTravelers INT NOT NULL,
-            Status ENUM('pending', 'confirmed', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
-            FOREIGN KEY (UserID) REFERENCES USERS(id),
-            FOREIGN KEY (PackageID) REFERENCES TRIPPACKAGES(PackageID)
-        );
+    CREATE TABLE Bookings (
+        id INT PRIMARY KEY,
+        userid INT,
+        packageid INT,
+        checkin DATE,
+        checkout DATE,
+        numoftravellers INT,
+        status ENUM('pending','confirmed','cancelled'),
+        FOREIGN KEY (userid) REFERENCES users(id),
+        FOREIGN KEY (packageid) REFERENCES Trippackages(id)
+    );
 
-        -- BOOKEDROOMS table
-        CREATE TABLE BOOKEDROOMS (
-            BookedRoomID INT PRIMARY KEY AUTO_INCREMENT,
-            BookingID INT NOT NULL,
-            RoomID INT NOT NULL,
-            Quantity INT NOT NULL,
-            PricePerNight DECIMAL(10, 2) NOT NULL,
-            FOREIGN KEY (BookingID) REFERENCES BOOKINGS(BookingID),
-            FOREIGN KEY (RoomID) REFERENCES ROOMS(RoomID)
-        );
+    CREATE TABLE Rooms_by_Bookings (
+        bookingid INT,
+        roomid INT,
+        quantity INT,
+        price DECIMAL(10,2),
+        PRIMARY KEY (bookingid, roomid),
+        FOREIGN KEY (bookingid) REFERENCES Bookings(id),
+        FOREIGN KEY (roomid) REFERENCES Rooms(id)
+    );
+
 
         )
     """;
