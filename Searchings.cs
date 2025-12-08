@@ -5,53 +5,75 @@ class Searchings
 {
     public record GetAll_Data
     (
-        string TripPackage,
-        string Country,
+        string TripPackageName,
+        string TripPackageDescription,
+        string CountryName,
         string City,
+        string CityDescription,
         string HotelName,
-        int RoomCapacity,
         int Stars,
-        decimal PackagePrice
- 
+        decimal DistanceToCenter,
+        decimal PoiDistance,
+        string PoiName
     );
+
     public static async Task<List<GetAll_Data>> GetAllPackages(Config config)
     {
         List<GetAll_Data> result = new();
 
         string query = """
-            SELECT tp.PackageName AS TripPackage, c.Country, d.City, h.HotelName, r.Capacity AS RoomCapacity, h.Stars, tp.PricePerPerson AS PackagePrice
-            FROM TRIPPACKAGES AS tp
-            
-            JOIN PACKAGEITINERARY AS pi ON tp.PackageID = pi.PackageID
-            JOIN DESTINATIONS AS d On pi.DestinationID = d.DestinationID
-            JOIN HOTELS AS h ON d.DestinationID = h.DestinationID
-            JOIN COUNTRY AS c ON c.CountryID = d.CountryID
-            JOIN ROOMS AS r ON h.HotelID = r.HotelID
-            
-            ORDER BY tp.PackageName ASC 
-
-            ;
+            SELECT 
+                tp.name AS trip_package_name,
+                tp.description AS trip_package_description,
+                c.name AS country_name,
+                d.city AS city,
+                d.description AS city_description,
+                h.name AS hotel_name,
+                h.stars,
+                h.distance_to_center,
+                hpd.distance AS poi_distance,
+                pd.name AS poi_name
+            FROM trip_packages AS tp
+            INNER JOIN package_itineraries AS pi ON tp.id = pi.package_id
+            INNER JOIN destinations AS d ON pi.destination_id = d.id
+            INNER JOIN hotels AS h ON d.id = h.destination_id
+            INNER JOIN countries AS c ON d.country_id = c.id
+            INNER JOIN hotel_poi_distances AS hpd ON h.id = hpd.hotel_id
+            INNER JOIN poi_distances AS pd ON hpd.poi_distance_id = pd.id
+            ORDER BY tp.name ASC;
         """;
 
         using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
         {
-            while (reader.Read())
+            while (await reader.ReadAsync())
             {
-                
+                // possible NULLs for description / distance_to_center / poi_distance needs. maybe needs fix
+                string tripPackageName        = reader.GetString(0);
+                string tripPackageDescription = reader.IsDBNull(1) ? "" : reader.GetString(1);
+                string countryName            = reader.GetString(2);
+                string city                   = reader.GetString(3);
+                string cityDescription        = reader.IsDBNull(4) ? "" : reader.GetString(4);
+                string hotelName              = reader.GetString(5);
+                int stars                     = reader.GetInt32(6);
+                decimal distanceToCenter      = reader.IsDBNull(7) ? 0m : reader.GetDecimal(7);
+                decimal poiDistance           = reader.IsDBNull(8) ? 0m : reader.GetDecimal(8);
+                string poiName                = reader.GetString(9);
 
                 result.Add(new GetAll_Data(
-                    reader.GetString(0),
-                    reader.GetString(1),
-                    reader.GetString(2),
-                    reader.GetString(3),
-                    reader.GetInt32(4),
-                    reader.GetInt32(5),
-                    reader.GetDecimal(6)
+                    tripPackageName,
+                    tripPackageDescription,
+                    countryName,
+                    city,
+                    cityDescription,
+                    hotelName,
+                    stars,
+                    distanceToCenter,
+                    poiDistance,
+                    poiName
                 ));
             }
         }
 
         return result;
     }
-
 }
