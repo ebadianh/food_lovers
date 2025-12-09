@@ -4,7 +4,7 @@ using MySql.Data.MySqlClient;
 class Searchings
 {
     public record GetAll_Data
-    (
+    (   int TripPackageId,
         string TripPackageName,
         string TripPackageDescription,
         string CountryName,
@@ -22,7 +22,8 @@ class Searchings
         List<GetAll_Data> result = new();
 
         string query = """
-            SELECT 
+            SELECT
+                tp.id AS trip_package_id,
                 tp.name AS trip_package_name,
                 tp.description AS trip_package_description,
                 c.name AS country_name,
@@ -48,18 +49,20 @@ class Searchings
             while (await reader.ReadAsync())
             {
                 // possible NULLs for description / distance_to_center / poi_distance needs. maybe needs fix
-                string tripPackageName        = reader.GetString(0);
-                string tripPackageDescription = reader.IsDBNull(1) ? "" : reader.GetString(1);
-                string countryName            = reader.GetString(2);
-                string city                   = reader.GetString(3);
-                string cityDescription        = reader.IsDBNull(4) ? "" : reader.GetString(4);
-                string hotelName              = reader.GetString(5);
-                int stars                     = reader.GetInt32(6);
-                decimal distanceToCenter      = reader.IsDBNull(7) ? 0m : reader.GetDecimal(7);
-                decimal poiDistance           = reader.IsDBNull(8) ? 0m : reader.GetDecimal(8);
-                string poiName                = reader.GetString(9);
+                int tripPackageId             = reader.GetInt32(0);
+                string tripPackageName        = reader.GetString(1);
+                string tripPackageDescription = reader.IsDBNull(2) ? "" : reader.GetString(1);
+                string countryName            = reader.GetString(3);
+                string city                   = reader.GetString(4);
+                string cityDescription        = reader.IsDBNull(5) ? "" : reader.GetString(4);
+                string hotelName              = reader.GetString(6);
+                int stars                     = reader.GetInt32(7);
+                decimal distanceToCenter      = reader.IsDBNull(8) ? 0m : reader.GetDecimal(7);
+                decimal poiDistance           = reader.IsDBNull(9) ? 0m : reader.GetDecimal(8);
+                string poiName                = reader.GetString(10);
 
                 result.Add(new GetAll_Data(
+                    tripPackageId,
                     tripPackageName,
                     tripPackageDescription,
                     countryName,
@@ -85,6 +88,7 @@ class Searchings
     // base query
     string query = """
         SELECT 
+            tp.id
             tp.name,
             tp.description,
             c.name,
@@ -123,16 +127,17 @@ class Searchings
     while (await reader.ReadAsync())
     {
         result.Add(new GetAll_Data(
-            reader.GetString(0),
-            reader.IsDBNull(1) ? "" : reader.GetString(1),
-            reader.GetString(2),
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.IsDBNull(2) ? "" : reader.GetString(1),
             reader.GetString(3),
-            reader.IsDBNull(4) ? "" : reader.GetString(4),
-            reader.GetString(5),
-            reader.GetInt32(6),
-            reader.IsDBNull(7) ? 0m : reader.GetDecimal(7),
-            reader.IsDBNull(8) ? 0m : reader.GetDecimal(8),
-            reader.GetString(9)
+            reader.GetString(4),
+            reader.IsDBNull(5) ? "" : reader.GetString(4),
+            reader.GetString(6),
+            reader.GetInt32(7),
+            reader.IsDBNull(8) ? 0m : reader.GetDecimal(7),
+            reader.IsDBNull(9) ? 0m : reader.GetDecimal(8),
+            reader.GetString(10)
         ));
     }
 

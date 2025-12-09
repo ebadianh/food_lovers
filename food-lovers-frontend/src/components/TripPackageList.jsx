@@ -1,7 +1,7 @@
 // src/components/TripPackageList.jsx
 import TripPackageCard from "./TripPackageCard";
 
-function TripPackageList({ packages }) {
+function TripPackageList({ packages, isLoggedIn }) {
   if (!packages.length) {
     return <p>No trips found.</p>;
   }
@@ -10,8 +10,9 @@ function TripPackageList({ packages }) {
     <div>
       {packages.map((pkg) => (
         <TripPackageCard
-          key={pkg.tripPackageName} // unique per package name
+          key={pkg.tripPackageName}
           tripPackage={pkg}
+          isLoggedIn={isLoggedIn} // 👈 forward
         />
       ))}
     </div>

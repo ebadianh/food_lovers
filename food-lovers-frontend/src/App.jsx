@@ -58,7 +58,12 @@ function App() {
                     Failed to load trips: {error.message}
                   </p>
                 )}
-                {!loading && !error && <TripPackageList packages={packages} />}
+                {!loading && !error && (
+                  <TripPackageList
+                    packages={packages}
+                    isLoggedIn={isLoggedIn} // 👈 add this
+                  />
+                )}
               </>
             }
           />

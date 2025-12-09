@@ -34,6 +34,7 @@ export function useTripPackages() {
 
       if (!map[key]) {
         map[key] = {
+          tripPackageId: row.tripPackageId,
           tripPackageName: row.tripPackageName,
           tripPackageDescription: row.tripPackageDescription,
           countryName: row.countryName,

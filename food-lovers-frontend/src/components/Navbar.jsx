@@ -19,7 +19,7 @@ function Navbar({ isLoggedIn, onLogout }) {
           textDecoration: "none",
           color: "inherit",
           fontWeight: "bold",
-          fontSize: "1.25rem",
+          fontSize: "1.5rem",
         }}
       >
         Food Lovers Trips
