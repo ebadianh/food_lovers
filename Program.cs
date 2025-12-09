@@ -81,7 +81,7 @@ async Task db_reset_to_default(Config config)
             first_name VARCHAR(256) NOT NULL,
             last_name VARCHAR(256) NOT NULL,
             email VARCHAR(256) NOT NULL UNIQUE,
-            password_hash VARCHAR(256) NOT NULL,
+            password VARCHAR(256) NOT NULL,
             CONSTRAINT chk_email_format CHECK (email LIKE '%_@_%._%')
         );
 
