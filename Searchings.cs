@@ -138,5 +138,56 @@ class Searchings
 
     return result;
 }
+public static async Task<IResult> GetSuggestedByCountry(Config config, string country)
+{
+    using var conn = new MySqlConnection(config.db);
+    await conn.OpenAsync();
+
+    string sql = @"
+        SELECT 
+            tp.id,
+            tp.name,
+            tp.description,
+            tp.price_per_person,
+            c.cuisine
+        FROM trip_packages tp
+        JOIN package_itineraries pi ON tp.id = pi.package_id
+        JOIN destinations d ON pi.destination_id = d.id
+        JOIN countries c ON d.country_id = c.id
+        WHERE c.name = @country
+        GROUP BY tp.id;
+    ";
+
+    using var cmd = new MySqlCommand(sql, conn);
+    cmd.Parameters.AddWithValue("@country", country);
+
+    using var reader = await cmd.ExecuteReaderAsync();
+
+    var result = new List<object>();
+
+    while (await reader.ReadAsync())
+    {
+        var id = Convert.ToInt32(reader["id"]); 
+        var name = reader["name"].ToString();  
+        var description = reader["description"].ToString();
+        var price = Convert.ToDecimal(reader["price_per_person"]);
+        var cuisine = reader["cuisine"].ToString();
+
+        result.Add(new
+        {
+            PackageId = id,
+            Name = name,
+            Description = description,
+            Price = price,
+            Cuisine = cuisine,
+            SuggestionReason = "Matches selected country and cuisine"
+        });
+    }
+
+
+
+    return Results.Ok(result);
+}
+
 
 }

@@ -40,10 +40,17 @@ app.MapGet("/bookings", Bookings.GetAll);
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
 
+app.MapGet("/suggested", async (Config config, string country) =>
+{
+    return await Searchings.GetSuggestedByCountry(config, country);
+});
+
 app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
 {
     return await Searchings.GetAllPackagesByCountry(config, country);
 });
+
+
 
 // special, reset db
 app.MapDelete("/db", db_reset_to_default);
