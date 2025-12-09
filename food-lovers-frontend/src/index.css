@@ -1,0 +1,34 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: white;
+  background-color: rgb(82, 75, 75);
+}
+
+.login-btn {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.6);
+  transition-duration: 0.5s;
+}
+
+.login-btn:hover {
+  transition-duration: 0.5s;
+  background-color: #776767;
+  color: white;
+}
+
+.nav-login-btn {
+  padding: 10px;
+  width: 5rem;
+  text-align: center;
+  border: 1px solid black;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.6);
+  transition-duration: 0.5s;
+  color: white;
+}
+.nav-login-btn:hover {
+  transition-duration: 0.5s;
+  background-color: #776767;
+  color: white;
+}

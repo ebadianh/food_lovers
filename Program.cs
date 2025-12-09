@@ -17,6 +17,19 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+//frontend added
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173") // React dev server
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // because you use session cookies
+    });
+});
+
 // swagger added
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -27,6 +40,10 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 app.UseSession();
+
+// use CORS
+app.UseCors("frontend");
+
 
 app.UseSwagger();
 app.UseSwaggerUI();
