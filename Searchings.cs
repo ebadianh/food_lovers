@@ -139,16 +139,16 @@ class Searchings
         return result;
     }
 
-    public record GetHotelByFacilities
+    public record GetHotelByF
 (
-    string HotelName,
+    string hotelName,
     string city,
     string country
 );
 
-    public static async Task<List<GetHotelByFacilities>> Get(Config config)
+    public static async Task<List<GetHotelByF>> GetHotelByFacilities(Config config)
     {
-        List<GetHotelByFacilities> result = new();
+        List<GetHotelByF> result = new();
 
         string query = """
         SELECT
@@ -173,7 +173,7 @@ class Searchings
                 string city = reader.GetString(1);
                 string country = reader.GetString(2);
 
-                result.Add(new GetHotelByFacilities(
+                result.Add(new GetHotelByF(
                 hotelName,
                 city,
                 country
