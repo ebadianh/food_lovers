@@ -216,7 +216,7 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- USERS
         -- ===========================
-        INSERT INTO users (id, first_name, last_name, email, password_hash) VALUES
+        INSERT INTO users (id, first_name, last_name, email, password) VALUES
         (1, 'Anna', 'Svensson', 'anna@example.com', 'password123'),
         (2, 'Johan', 'Larsson', 'johan@example.com', 'password123'),
         (3, 'Maria', 'Gonzalez', 'maria@example.com', 'password123');
