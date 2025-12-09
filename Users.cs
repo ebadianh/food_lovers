@@ -41,17 +41,17 @@ class Users
         return result;
     }
 
-    public record Post_Args(string Email, string Password); // har vi en void så blir det async task
-    public static async Task Post(User user, Config config)
+    public record Post_Args(string Firstname, string Lastname, string Email, string Password); // har vi en void så blir det async task
+    public static async Task Post(Post_Args body, Config config)
     {
-        string query = "INSERT INTO users(firstname, lastname, email, password) VALUES(@firstname, @lastname, @email, @password)";
+        string query = "INSERT INTO users(first_name, last_name, email, password) VALUES(@firstname, @lastname, @email, @password)";
 
         var parameters = new MySqlParameter[]
     {
-        new("@firstname", user.Firstname),
-        new("@lastname", user.Lastname),
-        new("@email", user.Email),
-        new("@password", user.Password)
+        new("@firstname", body.Firstname),
+        new("@lastname", body.Lastname),
+        new("@email", body.Email),
+        new("@password", body.Password)
         };
 
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
