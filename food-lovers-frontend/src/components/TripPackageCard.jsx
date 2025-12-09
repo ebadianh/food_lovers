@@ -62,7 +62,12 @@ function TripPackageCard({ tripPackage, isLoggedIn }) {
   }
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
       <div
         style={{
           border: "1px solid #ddd",
@@ -71,6 +76,7 @@ function TripPackageCard({ tripPackage, isLoggedIn }) {
           marginBottom: "1.5rem",
           boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
           width: "25rem",
+          backdropFilter: "brightness(20%)",
         }}
       >
         <h2>{tripPackageName}</h2>

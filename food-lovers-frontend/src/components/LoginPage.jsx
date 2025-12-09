@@ -25,7 +25,7 @@ function LoginPage({ onLoggedIn }) {
   }
 
   return (
-    <div>
+    <div className="login-page" style={{ maxWidth: "auto", maxHeight: "auto" }}>
       <LoginForm onLogin={handleLogin} error={error} />
     </div>
   );

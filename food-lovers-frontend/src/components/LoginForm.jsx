@@ -20,6 +20,7 @@ function LoginForm({ onLogin, loading, error }) {
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
       <form
+        className="login-form"
         onSubmit={handleSubmit}
         style={{
           border: "1px solid #ddd",
