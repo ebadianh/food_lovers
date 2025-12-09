@@ -78,7 +78,6 @@ class Searchings
         return result;
     }
 
-
     public static async Task<List<GetAll_Data>> GetAllPackagesByCountry(Config config, string? country = null)
     {
         List<GetAll_Data> result = new();
@@ -140,7 +139,49 @@ class Searchings
         return result;
     }
 
+    public record GetHotelByFacilities
+(
+    string HotelName,
+    string city,
+    string country
+);
 
+    public static async Task<List<GetHotelByFacilities>> Get(Config config)
+    {
+        List<GetHotelByFacilities> result = new();
 
+        string query = """
+        SELECT
+        h.name AS HotelName,
+        d.city AS City,
+        c.name AS Country
+        FROM Hotels AS h
+        INNER JOIN destinations d ON h.destination_id = d.id
+        INNER JOIN countries c ON d.country_id = c.id
+        INNER JOIN accommodation_facilities af ON h.id = af.hotel_id
+        INNER JOIN facilities f ON af.facility_id = f.id
+        WHERE f.name IN ('Swimming pool', 'Spa')
+        GROUP BY h.name, d.city, c.name
+        HAVING COUNT(DISTINCT f.name) = 2;
+        """;
+
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+            while (await reader.ReadAsync())
+            {
+                string hotelName = reader.GetString(0);
+                string city = reader.GetString(1);
+                string country = reader.GetString(2);
+
+                result.Add(new GetHotelByFacilities(
+                hotelName,
+                city,
+                country
+                ));
+            }
+        }
+
+        return result;
+    }
 }
 
