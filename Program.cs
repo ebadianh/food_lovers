@@ -195,6 +195,23 @@ async Task db_reset_to_default(Config config)
         );
         """;
 
+    string view = """
+        
+        CREATE VIEW Room_type AS
+        SELECT h.name AS HotelName, r.id, 
+        CASE 
+        WHEN r.capacity <= 2 THEN 'Single room'
+        WHEN r.capacity <= 4 THEN 'Double room'
+        WHEN r.capacity <= 6 THEN 'Family room'
+        ELSE 'Suite'
+        END AS Room_type, 
+        r.capacity
+
+        FROM ROOMS AS r
+        JOIN HOTELS AS h ON h.id = r.hotel_id
+
+
+        """;
     string seed = """
 
         SET FOREIGN_KEY_CHECKS = 0;
@@ -355,9 +372,34 @@ async Task db_reset_to_default(Config config)
         (2, 2, 5, 1, 110.00),
         (3, 3, 7, 2, 200.00);
 
+        INSERT INTO rooms (hotel_id, capacity)
+        VALUES
+            -- Hotel 1
+            (1, 1),  -- Single room
+            (1, 2),  -- Single room
+            (1, 3),  -- Double room
+            (1, 4),  -- Double room
+            (1, 5),  -- Family room
+            (1, 6),  -- Family room
+            (1, 7),  -- Suite
+
+            -- Hotel 2
+            (2, 2),  -- Single room
+            (2, 4),  -- Double room
+            (2, 6),  -- Family room
+            (2, 7),  -- Suite
+
+            -- Hotel 3
+            (3, 1),  -- Single room
+            (3, 3),  -- Double room
+            (3, 5);  -- Family room
+            (3, 6),  -- Suite
+
+
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, view);
     await MySqlHelper.ExecuteNonQueryAsync(config.db, seed);
 }
 
