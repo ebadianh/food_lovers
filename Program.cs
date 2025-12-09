@@ -36,6 +36,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 
 // CRUD methods for bookings
 app.MapGet("/bookings", Bookings.GetAll);
+app.MapPost("/bookings", Bookings.Post);
 
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
