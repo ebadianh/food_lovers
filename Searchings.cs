@@ -3,7 +3,6 @@ using MySql.Data.MySqlClient;
 
 class Searchings
 {
-    // This is just a container for your data
     public record GetAll_Data(
         string TripPackage,
         string Country,
@@ -15,24 +14,18 @@ class Searchings
     );
 
     public static async Task<List<GetAll_Data>> GetAllPackages(
-        Config config, 
-        string? country = null, 
-        string? city = null, 
-        int? minStars = null, 
+        Config config,
+        string? search = null,     // <-- Added search parameter
+        string? country = null,
+        string? city = null,
+        int? minStars = null,
         decimal? maxPrice = null)
     {
-        
-        // förbered en empty lista av resultat
         var results = new List<GetAll_Data>();
 
-        
-        // skapar connection till db:n 
         using var conn = new MySqlConnection(config.db);
         await conn.OpenAsync();
 
-        
-        // Startar query stringen med Where 1=1 så att man kan använda "AND" för senare tillfällen
-        // 
         var query = """
             SELECT tp.name, c.name, d.city, h.name, r.capacity, h.stars, tp.price_per_person
             FROM trip_packages AS tp
@@ -41,28 +34,27 @@ class Searchings
             JOIN hotels AS h ON d.id = h.destination_id
             JOIN countries AS c ON c.id = d.country_id
             JOIN rooms AS r ON h.id = r.hotel_id
-            WHERE 1=1 
+            WHERE 1=1
         """;
 
-        
-        // Skapar ett kommando objekt 
-        // kommando objektet är en "messanger" mellan C# koden och databasen
         using var cmd = new MySqlCommand();
         cmd.Connection = conn;
 
         
-        // lägger till filter en by en 
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query += " AND c.name LIKE @search";
+            cmd.Parameters.AddWithValue("@search", "%" + search + "%");
+        }
 
         
-        // if statment om country har text lägg till SQL och ett värde
         if (!string.IsNullOrEmpty(country))
         {
             query += " AND c.name LIKE @country";
             cmd.Parameters.AddWithValue("@country", "%" + country + "%");
         }
 
-
-        // om city har text lägg till SQL och ett värde
+        
         if (!string.IsNullOrEmpty(city))
         {
             query += " AND d.city LIKE @city";
@@ -70,33 +62,23 @@ class Searchings
         }
 
         
-        // om 'minStars' har ett nummer lägg till SQL och ett värde
         if (minStars.HasValue)
         {
             query += " AND h.stars >= @minStars";
             cmd.Parameters.AddWithValue("@minStars", minStars);
         }
 
-        // If 'maxPrice' has a number...
-        // lägg till SQL och ett värde 
+        
         if (maxPrice.HasValue)
         {
             query += " AND tp.price_per_person <= @maxPrice";
             cmd.Parameters.AddWithValue("@maxPrice", maxPrice);
         }
 
-        
-        // lägger till sort på slutet 
         query += " ORDER BY tp.name ASC";
-
-        
-        // den färdiga query strängen till kommandet
         cmd.CommandText = query;
 
-        
-        // kör och läser datan 
         using var reader = await cmd.ExecuteReaderAsync();
-        
         while (reader.Read())
         {
             results.Add(new GetAll_Data(
