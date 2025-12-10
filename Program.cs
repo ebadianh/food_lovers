@@ -9,7 +9,6 @@ Config config = new(
 );
 
 
-
 builder.Services.AddSingleton<Config>(config);
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -18,8 +17,19 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// swagger added
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    // Use full type name (including declaring type) so GetAll_Data in Bookings/Searchings don't clash
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+});
+
 var app = builder.Build();
 app.UseSession();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // REST routes
 // session / login / logout examples (auth resource)
@@ -36,6 +46,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 
 // CRUD methods for bookings
 app.MapGet("/bookings", Bookings.GetAll);
+app.MapPost("/bookings", Bookings.Post);
 
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
@@ -77,6 +88,9 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS facilities;
         DROP TABLE IF EXISTS countries;
         DROP TABLE IF EXISTS users;
+
+        -- db views dropped before created
+        DROP VIEW IF EXISTS Room_type;
 
         SET FOREIGN_KEY_CHECKS = 1; -- control for database foreign key constraints. example: cant drop a parent table if a child table references it. = 1 enables it
 
@@ -192,16 +206,33 @@ async Task db_reset_to_default(Config config)
 
         -- BOOKED_ROOMS table
         CREATE TABLE booked_rooms (
-            id INT PRIMARY KEY AUTO_INCREMENT,
             booking_id INT NOT NULL,
             room_id INT NOT NULL,
-            quantity INT NOT NULL,
             price_per_night DECIMAL(10, 2) NOT NULL,
+            PRIMARY KEY (booking_id, room_id),
             FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
             FOREIGN KEY (room_id) REFERENCES rooms(id)
         );
+
         """;
 
+    string view = """
+        
+        CREATE VIEW Room_type AS
+        SELECT h.name AS HotelName, r.id, 
+        CASE 
+        WHEN r.capacity <= 2 THEN 'Single room'
+        WHEN r.capacity <= 4 THEN 'Double room'
+        WHEN r.capacity <= 6 THEN 'Family room'
+        ELSE 'Suite'
+        END AS Room_type, 
+        r.capacity
+
+        FROM ROOMS AS r
+        JOIN HOTELS AS h ON h.id = r.hotel_id
+
+
+        """;
     string seed = """
 
         SET FOREIGN_KEY_CHECKS = 0;
@@ -357,14 +388,39 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- BOOKED ROOMS
         -- ===========================
-        INSERT INTO booked_rooms (id, booking_id, room_id, quantity, price_per_night) VALUES
-        (1, 1, 1, 1, 150.00),
-        (2, 2, 5, 1, 110.00),
-        (3, 3, 7, 2, 200.00);
+        INSERT INTO booked_rooms (booking_id, room_id, price_per_night) VALUES
+        (1, 1, 150.00),
+        (2, 5, 110.00),
+        (3, 7, 200.00);
+
+        INSERT INTO rooms (hotel_id, capacity)
+        VALUES
+            -- Hotel 1
+            (1, 1),  -- Single room
+            (1, 2),  -- Single room
+            (1, 3),  -- Double room
+            (1, 4),  -- Double room
+            (1, 5),  -- Family room
+            (1, 6),  -- Family room
+            (1, 8),  -- Suite
+
+            -- Hotel 2
+            (2, 2),  -- Single room
+            (2, 4),  -- Double room
+            (2, 6),  -- Family room
+            (2, 8),  -- Suite
+
+            -- Hotel 3
+            (3, 1),  -- Single room
+            (3, 3),  -- Double room
+            (3, 5),  -- Family room
+            (3, 8);  -- Suite
+
 
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, view);
     await MySqlHelper.ExecuteNonQueryAsync(config.db, seed);
 }
 
