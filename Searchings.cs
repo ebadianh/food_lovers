@@ -104,20 +104,20 @@ class Searchings
         INNER JOIN poi_distances AS pd ON hpd.poi_distance_id = pd.id
     """;
 
-    // filtering by country
+    
     if (!string.IsNullOrEmpty(country))
     {
         query += " WHERE c.name LIKE @country ";
     }
 
-    query += " ORDER BY tp.name ASC; "; // order by travelpackage.name in ascending order
+    query += " ORDER BY tp.name ASC; "; 
 
     using var connection = new MySqlConnection(config.db);
     await connection.OpenAsync();
     using var cmd = new MySqlCommand(query, connection);
 
     if (!string.IsNullOrEmpty(country))
-        cmd.Parameters.AddWithValue("@country", $"%{country}%"); // adjust the endpoint to http://localhost:5240/searchings?country=italy as an example
+        cmd.Parameters.AddWithValue("@country", $"%{country}%");
 
     using var reader = await cmd.ExecuteReaderAsync();
     while (await reader.ReadAsync())
@@ -137,13 +137,12 @@ class Searchings
     }
     return result;
     }
-}
-public static async Task<IResult> GetSuggestedByCountry(Config config, string country)
+    public static async Task<List<object>> GetSuggestedByCountry(Config config, string country)
 {
     using var conn = new MySqlConnection(config.db);
     await conn.OpenAsync();
 
-    string sql = @"
+    string query = """
         SELECT 
             tp.id,
             tp.name,
@@ -154,11 +153,10 @@ public static async Task<IResult> GetSuggestedByCountry(Config config, string co
         JOIN package_itineraries pi ON tp.id = pi.package_id
         JOIN destinations d ON pi.destination_id = d.id
         JOIN countries c ON d.country_id = c.id
-        WHERE c.name = @country
-        GROUP BY tp.id;
-    ";
+        WHERE c.name = @country;
+    """;
 
-    using var cmd = new MySqlCommand(sql, conn);
+    using var cmd = new MySqlCommand(query, conn);
     cmd.Parameters.AddWithValue("@country", country);
 
     using var reader = await cmd.ExecuteReaderAsync();
@@ -167,8 +165,8 @@ public static async Task<IResult> GetSuggestedByCountry(Config config, string co
 
     while (await reader.ReadAsync())
     {
-        var id = Convert.ToInt32(reader["id"]); 
-        var name = reader["name"].ToString();  
+        var id = Convert.ToInt32(reader["id"]);
+        var name = reader["name"].ToString();
         var description = reader["description"].ToString();
         var price = Convert.ToDecimal(reader["price_per_person"]);
         var cuisine = reader["cuisine"].ToString();
@@ -184,9 +182,10 @@ public static async Task<IResult> GetSuggestedByCountry(Config config, string co
         });
     }
 
+    return result;
+}  
+
+}  
 
 
-    return Results.Ok(result);
-}
-
-
+    
