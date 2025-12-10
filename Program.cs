@@ -152,9 +152,10 @@ async Task db_reset_to_default(Config config)
 
         -- ROOMS table (each room type belongs to a hotel)
         CREATE TABLE rooms (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            hotel_id INT NOT NULL,
-            capacity INT NOT NULL,
+            hotel_id   INT NOT NULL,
+            room_number INT NOT NULL,
+            capacity    INT NOT NULL,
+            PRIMARY KEY (hotel_id, room_number),
             FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE
         );
 
@@ -189,11 +190,12 @@ async Task db_reset_to_default(Config config)
         -- BOOKED_ROOMS table
         CREATE TABLE booked_rooms (
             booking_id INT NOT NULL,
-            room_id INT NOT NULL,
+            hotel_id INT NOT NULL,
+            room_number INT NOT NULL,
             price_per_night DECIMAL(10, 2) NOT NULL,
-            PRIMARY KEY (booking_id, room_id),
+            PRIMARY KEY (booking_id, hotel_id, room_number),
             FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-            FOREIGN KEY (room_id) REFERENCES rooms(id)
+            FOREIGN KEY (hotel_id, room_number) REFERENCES rooms(hotel_id, room_number) ON DELETE CASCADE
         );
 
         """;
@@ -201,7 +203,10 @@ async Task db_reset_to_default(Config config)
     string view = """
         
         CREATE VIEW Room_type AS
-        SELECT h.name AS HotelName, r.id, 
+        SELECT 
+        h.name AS HotelName,
+        r.hotel_id,
+        r.room_number, 
         CASE 
         WHEN r.capacity <= 2 THEN 'Single room'
         WHEN r.capacity <= 4 THEN 'Double room'
@@ -322,15 +327,31 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- ROOMS (room types per hotel)
         -- ===========================
-        INSERT INTO rooms (id, hotel_id, capacity) VALUES
-        (1, 1, 2),
-        (2, 1, 4),
-        (3, 2, 2),
-        (4, 2, 3),
-        (5, 3, 1),
-        (6, 3, 2),
-        (7, 4, 2),
-        (8, 4, 4);
+         INSERT INTO rooms (hotel_id, room_number, capacity) VALUES
+        -- Hotel 1 rooms 1–7
+            (1, 1, 1),
+            (1, 2, 2),
+            (1, 3, 3),
+            (1, 4, 4),
+            (1, 5, 5),
+            (1, 6, 6),
+            (1, 7, 8),
+
+        -- Hotel 2 rooms 1–4
+            (2, 1, 2),
+            (2, 2, 4),
+            (2, 3, 6),
+            (2, 4, 8),
+
+        -- Hotel 3 rooms 1–4
+            (3, 1, 1),
+            (3, 2, 3),
+            (3, 3, 5),
+            (3, 4, 8),
+
+        -- Hotel 4 rooms 1–2 (from earlier seed)
+            (4, 1, 2),
+            (4, 2, 4);
 
         -- ===========================
         -- FACILITIES
@@ -370,35 +391,12 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- BOOKED ROOMS
         -- ===========================
-        INSERT INTO booked_rooms (booking_id, room_id, price_per_night) VALUES
-        (1, 1, 150.00),
-        (2, 5, 110.00),
-        (3, 7, 200.00);
+        INSERT INTO booked_rooms (booking_id, hotel_id, room_number, price_per_night) VALUES
+        (1, 1, 1, 150.00),
+        (2, 3, 1, 110.00),
+        (3, 4, 1, 200.00);
 
-        INSERT INTO rooms (hotel_id, capacity)
-        VALUES
-            -- Hotel 1
-            (1, 1),  -- Single room
-            (1, 2),  -- Single room
-            (1, 3),  -- Double room
-            (1, 4),  -- Double room
-            (1, 5),  -- Family room
-            (1, 6),  -- Family room
-            (1, 8),  -- Suite
-
-            -- Hotel 2
-            (2, 2),  -- Single room
-            (2, 4),  -- Double room
-            (2, 6),  -- Family room
-            (2, 8),  -- Suite
-
-            -- Hotel 3
-            (3, 1),  -- Single room
-            (3, 3),  -- Double room
-            (3, 5),  -- Family room
-            (3, 8);  -- Suite
-
-
+    
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
