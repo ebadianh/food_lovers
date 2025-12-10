@@ -370,10 +370,10 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- BOOKED ROOMS
         -- ===========================
-        INSERT INTO booked_rooms (id, booking_id, room_id, price_per_night) VALUES
-        (1, 1, 1, 150.00),
-        (2, 2, 5, 110.00),
-        (3, 3, 7, 200.00);
+        INSERT INTO booked_rooms (booking_id, room_id, price_per_night) VALUES
+        (1, 1, 150.00),
+        (2, 5, 110.00),
+        (3, 7, 200.00);
 
         INSERT INTO rooms (hotel_id, capacity)
         VALUES
