@@ -79,7 +79,7 @@ class Searchings
 
 
     public static async Task<List<GetAll_Data>> GetAllPackagesByCountry(Config config, string? country = null)
-{
+    {
     List<GetAll_Data> result = new();
 
     // base query
@@ -135,9 +135,7 @@ class Searchings
             reader.GetString(9)
         ));
     }
-
     return result;
-}
-
+    }
 }
 
