@@ -139,11 +139,13 @@ class Searchings
         return result;
     }
 
+
     public record GetHotelByF
 (
     string hotelName,
     string city,
-    string country
+    string country,
+    string facilities
 );
 
     public static async Task<List<GetHotelByF>> GetHotelByFacilities(Config config)
@@ -154,7 +156,8 @@ class Searchings
         SELECT
         h.name AS HotelName,
         d.city AS City,
-        c.name AS Country
+        c.name AS Country,
+        GROUP_CONCAT(DISTINCT f.name ORDER BY f.name SEPARATOR ', ') AS Facilities
         FROM Hotels AS h
         INNER JOIN destinations d ON h.destination_id = d.id
         INNER JOIN countries c ON d.country_id = c.id
@@ -172,11 +175,155 @@ class Searchings
                 string hotelName = reader.GetString(0);
                 string city = reader.GetString(1);
                 string country = reader.GetString(2);
+                string facilities = reader.GetString(3);
 
                 result.Add(new GetHotelByF(
                 hotelName,
                 city,
-                country
+                country,
+                facilities
+                ));
+            }
+        }
+
+        return result;
+    }
+
+    public record GetHotelByW
+(
+    string country,
+    string city,
+    string hotelName,
+    string facility
+);
+
+    public static async Task<List<GetHotelByW>> GetHotelByWiFi(Config config)
+    {
+        List<GetHotelByW> result = new();
+
+        string query = """
+        SELECT
+        c.name AS Country,
+        d.city AS City,
+        h.name AS HotelName,
+        f.name AS Facility
+        FROM Hotels AS H
+        INNER JOIN accommodation_facilities AS af ON h.id = af.hotel_id
+        INNER JOIN facilities AS f ON af.facility_id = f.id
+        INNER JOIN countries AS c ON f.id = c.id
+        INNER JOIN destinations AS d ON c.id = d.id
+        WHERE f.name = 'Free Wi-Fi';
+        """;
+
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+            while (await reader.ReadAsync())
+            {
+                string country = reader.GetString(0);
+                string city = reader.GetString(1);
+                string hotelName = reader.GetString(2);
+                string facility = reader.GetString(3);
+
+                result.Add(new GetHotelByW(
+                country,
+                city,
+                hotelName,
+                facility
+
+                ));
+            }
+        }
+
+        return result;
+    }
+
+    public record GetHotelByS
+(
+    string country,
+    string city,
+    string hotelName,
+    int stars
+);
+
+    public static async Task<List<GetHotelByS>> GetHotelByStars(Config config)
+    {
+        List<GetHotelByS> result = new();
+
+        string query = """
+        SELECT
+        c.name AS Country,
+        d.city AS City,
+        h.name AS HotelName,
+        h.stars AS Stars
+        FROM Hotels h
+        INNER JOIN destinations AS d ON h.destination_id = d.id
+        INNER JOIN countries AS c ON d.country_id = c.id
+        WHERE stars >= 4
+        ORDER BY h.stars DESC;
+        """;
+
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+            while (await reader.ReadAsync())
+            {
+                string country = reader.GetString(0);
+                string city = reader.GetString(1);
+                string hotelName = reader.GetString(2);
+                int stars = reader.GetInt32(3);
+
+                result.Add(new GetHotelByS(
+                country,
+                city,
+                hotelName,
+                stars
+
+                ));
+            }
+        }
+
+        return result;
+    }
+
+    public record GetHotelByD
+(
+    string Country,
+    string City,
+    string HotelName,
+    double DistanceToCenter
+);
+
+    public static async Task<List<GetHotelByD>> GetHotelByDistanceToC(Config config)
+    {
+        List<GetHotelByD> result = new();
+
+        string query = """
+        SELECT
+        c.name AS Country,
+        d.city AS City,
+        h.name AS HotelName,
+        h.distance_to_center AS DistanceToCenter
+        FROM Hotels h
+        INNER JOIN destinations AS d ON h.destination_id = d.id
+        INNER JOIN countries AS c ON d.country_id = c.id
+        WHERE distance_to_center <= 1
+        ORDER BY h.distance_to_center DESC;
+        """;
+
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+            while (await reader.ReadAsync())
+            {
+                string Country = reader.GetString(0);
+                string City = reader.GetString(1);
+                string HotelName = reader.GetString(2);
+                double DistanceToCenter = reader.GetDouble(3);
+
+                result.Add(new GetHotelByD(
+                Country,
+                City,
+                HotelName,
+                DistanceToCenter
+
                 ));
             }
         }

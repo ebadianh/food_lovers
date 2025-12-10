@@ -41,6 +41,9 @@ app.MapPost("/bookings", Bookings.Post);
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
 app.MapGet("/searchings/facilities", Searchings.GetHotelByFacilities);
+app.MapGet("/searchings/wifi", Searchings.GetHotelByWiFi);
+app.MapGet("/searchings/stars", Searchings.GetHotelByStars);
+app.MapGet("/searchings/distance", Searchings.GetHotelByDistanceToC);
 
 app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
 {
