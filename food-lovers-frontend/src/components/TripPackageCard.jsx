@@ -189,7 +189,7 @@ function TripPackageCard({ tripPackage, isLoggedIn }) {
             </form>
           )}
 
-          {/* ✅ Always-visible feedback below button/form */}
+          {/* Always-visible feedback below button/form */}
           {bookingError && (
             <p style={{ color: "red", marginTop: "0.75rem" }}>{bookingError}</p>
           )}

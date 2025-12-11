@@ -12,7 +12,7 @@ function TripPackageList({ packages, isLoggedIn }) {
         <TripPackageCard
           key={pkg.tripPackageName}
           tripPackage={pkg}
-          isLoggedIn={isLoggedIn} // 👈 forward
+          isLoggedIn={isLoggedIn} // fixed
         />
       ))}
     </div>
