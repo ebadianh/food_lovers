@@ -34,7 +34,7 @@ class Bookings
     );
 
     // GET ALL BOOKINGS
-    public static async Task<List<GetAll_Data>> GetAll(Config config, HttpContext ctx)
+    public static async Task<List<GetAll_Data>> GetAll(Config config)
     {
 
         List<GetAll_Data> result = new();
@@ -74,27 +74,23 @@ class Bookings
     }
 
     // POST BOOKING 
-    public static async Task<int> Post(Post_Args body, Config config, HttpContext ctx)
+public static async Task<IResult> Post(Post_Args body, Config config, HttpContext ctx)
 {
     // 1. must be logged in
-
     int? userId = ctx.Session.GetInt32("user_id");
     if (userId is null)
     {
-        // if not logged in, not allowed to create booking
-        return 0;
+        return Results.Unauthorized();
     }
 
     // 2. parse status string to enum
     if (!Enum.TryParse<BookingStatus>(body.Status, ignoreCase: true, out var statusEnum))
     {
-        // invalid status will return nothing. (invalid status can be wrong input or anything not inside the enum)
-
-        return 0;
+        return Results.BadRequest(new { error = "Invalid booking status." });
     }
 
-    // 3. insert booking using userId from session. DON'T inser userID in the body of post req
-    string insertQuery = """
+    // 3. Insert booking using session userId
+    const string insertQuery = """
         INSERT INTO bookings (user_id, package_id, checkin, checkout, number_of_travelers, status)
         VALUES (@user_id, @package_id, @checkin, @checkout, @number_of_travelers, @status);
     """;
@@ -106,23 +102,32 @@ class Bookings
         new("@checkin", body.Checkin),
         new("@checkout", body.Checkout),
         new("@number_of_travelers", body.NumberOfTravelers),
-        new("@status", statusEnum.ToString().ToLower()) //status is parsed to string, enter it in lowercase in json body
+        new("@status", statusEnum.ToString().ToLower())
     };
 
-    // execute insert
     await MySqlHelper.ExecuteNonQueryAsync(config.db, insertQuery, insertParams);
 
-    // get the LAST INSERT ID 
+    // 4. Retrieve last inserted ID
     string idQuery = "SELECT LAST_INSERT_ID();";
-
     object? scalar = await MySqlHelper.ExecuteScalarAsync(config.db, idQuery);
 
     if (scalar != null && scalar != DBNull.Value)
     {
-        return Convert.ToInt32(scalar);
+        int newId = Convert.ToInt32(scalar);
+
+        return Results.Ok(new
+        {
+            id = newId,
+            message = "Booking created successfully."
+        });
     }
 
-    return 0;
+    return Results.Problem("Could not retrieve booking ID after insert.");
 }
+
+
+
+
+   
 
 }
