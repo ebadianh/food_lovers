@@ -34,8 +34,9 @@ class Bookings
     );
 
     // GET ALL BOOKINGS
-    public static async Task<List<GetAll_Data>> GetAll(Config config)
+    public static async Task<List<GetAll_Data>> GetAll(Config config, HttpContext ctx)
     {
+
         List<GetAll_Data> result = new();
 
         string query = """
