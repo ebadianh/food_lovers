@@ -1,5 +1,12 @@
-namespace server;
+namespace server
+{
+    public class Config
+    {
+        public string db { get; set; }
 
-using MySql.Data.MySqlClient;
-
-record Config(string db);
+        public Config(string connectionString)
+        {
+            db = connectionString;
+        }
+    }
+}
