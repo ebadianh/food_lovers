@@ -365,7 +365,7 @@ namespace server
                     c.name AS country,
                     d.city,
                     SUM(rt.capacity) AS total_hotel_capacity,
-                    SUM(r.hotel_id) AS total_available_rooms
+                    COUNT(r.hotel_id) AS total_available_rooms
                 FROM hotels h
                 JOIN destinations AS d ON d.id = h.destination_id
                 JOIN countries AS c ON c.id = d.country_id
