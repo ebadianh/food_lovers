@@ -1,3 +1,4 @@
+using Microsoft.VisualBasic;
 using MySql.Data.MySqlClient;
 using server;
 
@@ -50,7 +51,18 @@ app.MapPost("/bookings", Bookings.Post);
 
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
-
+app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
+/*
+app.MapGet("/search/hotels", async (
+    Config config, 
+    string country,
+    DateOnly checkin,
+    DateOnly checkout,
+    int travelers) =>
+{
+    return await Searchings.GetAllHotelsByPreference(config, country, checkin, checkout, travelers);
+});
+*/
 app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
 {
     return await Searchings.GetAllPackagesByCountry(config, country);
