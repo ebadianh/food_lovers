@@ -1,3 +1,4 @@
+using Microsoft.VisualBasic;
 using MySql.Data.MySqlClient;
 using server;
 
@@ -9,7 +10,6 @@ Config config = new(
 );
 
 
-
 builder.Services.AddSingleton<Config>(config);
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -18,8 +18,19 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// swagger added
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    // Use full type name (including declaring type) so GetAll_Data in Bookings/Searchings don't clash
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+});
+
 var app = builder.Build();
 app.UseSession();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // REST routes
 // session / login / logout examples (auth resource)
@@ -40,7 +51,22 @@ app.MapPost("/bookings", Bookings.Post);
 
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
-
+app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
+/*
+app.MapGet("/search/hotels", async (
+    Config config, 
+    string country,
+    DateOnly checkin,
+    DateOnly checkout,
+    int travelers) =>
+{
+    return await Searchings.GetAllHotelsByPreference(config, country, checkin, checkout, travelers);
+});
+*/
+app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
+{
+    return await Searchings.GetAllPackagesByCountry(config, country);
+});
 
 // special, reset db
 app.MapDelete("/db", db_reset_to_default);
@@ -67,6 +93,9 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS facilities;
         DROP TABLE IF EXISTS countries;
         DROP TABLE IF EXISTS users;
+
+        -- db views dropped before created
+        DROP VIEW IF EXISTS Room_type;
 
         SET FOREIGN_KEY_CHECKS = 1; -- control for database foreign key constraints. example: cant drop a parent table if a child table references it. = 1 enables it
 
@@ -146,9 +175,10 @@ async Task db_reset_to_default(Config config)
 
         -- ROOMS table (each room type belongs to a hotel)
         CREATE TABLE rooms (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            hotel_id INT NOT NULL,
-            capacity INT NOT NULL,
+            hotel_id   INT NOT NULL,
+            room_number INT NOT NULL,
+            capacity    INT NOT NULL,
+            PRIMARY KEY (hotel_id, room_number),
             FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE
         );
 
@@ -182,16 +212,37 @@ async Task db_reset_to_default(Config config)
 
         -- BOOKED_ROOMS table
         CREATE TABLE booked_rooms (
-            id INT PRIMARY KEY AUTO_INCREMENT,
             booking_id INT NOT NULL,
-            room_id INT NOT NULL,
-            quantity INT NOT NULL,
+            hotel_id INT NOT NULL,
+            room_number INT NOT NULL,
             price_per_night DECIMAL(10, 2) NOT NULL,
+            PRIMARY KEY (booking_id, hotel_id, room_number),
             FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
-            FOREIGN KEY (room_id) REFERENCES rooms(id)
+            FOREIGN KEY (hotel_id, room_number) REFERENCES rooms(hotel_id, room_number) ON DELETE CASCADE
         );
+
         """;
 
+    string view = """
+        
+        CREATE VIEW Room_type AS
+        SELECT 
+        h.name AS HotelName,
+        r.hotel_id,
+        r.room_number, 
+        CASE 
+        WHEN r.capacity <= 2 THEN 'Single room'
+        WHEN r.capacity <= 4 THEN 'Double room'
+        WHEN r.capacity <= 6 THEN 'Family room'
+        ELSE 'Suite'
+        END AS Room_type, 
+        r.capacity
+
+        FROM ROOMS AS r
+        JOIN HOTELS AS h ON h.id = r.hotel_id
+
+
+        """;
     string seed = """
 
         SET FOREIGN_KEY_CHECKS = 0;
@@ -299,15 +350,31 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- ROOMS (room types per hotel)
         -- ===========================
-        INSERT INTO rooms (id, hotel_id, capacity) VALUES
-        (1, 1, 2),
-        (2, 1, 4),
-        (3, 2, 2),
-        (4, 2, 3),
-        (5, 3, 1),
-        (6, 3, 2),
-        (7, 4, 2),
-        (8, 4, 4);
+         INSERT INTO rooms (hotel_id, room_number, capacity) VALUES
+        -- Hotel 1 rooms 1–7
+            (1, 1, 1),
+            (1, 2, 2),
+            (1, 3, 3),
+            (1, 4, 4),
+            (1, 5, 5),
+            (1, 6, 6),
+            (1, 7, 8),
+
+        -- Hotel 2 rooms 1–4
+            (2, 1, 2),
+            (2, 2, 4),
+            (2, 3, 6),
+            (2, 4, 8),
+
+        -- Hotel 3 rooms 1–4
+            (3, 1, 1),
+            (3, 2, 3),
+            (3, 3, 5),
+            (3, 4, 8),
+
+        -- Hotel 4 rooms 1–2 (from earlier seed)
+            (4, 1, 2),
+            (4, 2, 4);
 
         -- ===========================
         -- FACILITIES
@@ -347,14 +414,16 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- BOOKED ROOMS
         -- ===========================
-        INSERT INTO booked_rooms (id, booking_id, room_id, quantity, price_per_night) VALUES
-        (1, 1, 1, 1, 150.00),
-        (2, 2, 5, 1, 110.00),
-        (3, 3, 7, 2, 200.00);
+        INSERT INTO booked_rooms (booking_id, hotel_id, room_number, price_per_night) VALUES
+        (1, 1, 1, 150.00),
+        (2, 3, 1, 110.00),
+        (3, 4, 1, 200.00);
 
+    
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, view);
     await MySqlHelper.ExecuteNonQueryAsync(config.db, seed);
 }
 
