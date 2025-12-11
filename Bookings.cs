@@ -125,9 +125,47 @@ public static async Task<IResult> Post(Post_Args body, Config config, HttpContex
     return Results.Problem("Could not retrieve booking ID after insert.");
 }
 
+public static async Task<IResult> Delete(int id, HttpContext ctx, Config config)
+{
+    // 1. must be logged in
+    int? userId = ctx.Session.GetInt32("user_id");
+    if (userId is null)
+    {
+        return Results.Unauthorized();
+    }
 
+    // 2. check if booking exists AND belongs to user
+    string checkQuery = "SELECT user_id FROM bookings WHERE id = @id;";
+    var checkParams = new MySqlParameter[] { new("@id", id) };
 
+    using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, checkQuery, checkParams))
+    {
+        if (!reader.Read())
+        {
+            return Results.NotFound(new { error = "Booking not found." });
+        }
 
-   
+        int ownerId = reader.GetInt32(0);
+
+        if (ownerId != userId.Value)
+        {
+            return Results.Forbid();
+        }
+    }
+
+    // 3. DELETE booking
+    string deleteQuery = "DELETE FROM bookings WHERE id = @id;";
+    var deleteParams = new MySqlParameter[] { new("@id", id) };
+
+    int affected = await MySqlHelper.ExecuteNonQueryAsync(config.db, deleteQuery, deleteParams);
+
+    if (affected == 0)
+    {
+        return Results.NotFound(new { error = "Booking could not be deleted." });
+    }
+
+    // 4. return SUCCESS MESSAGE
+    return Results.Ok(new { message = "Booking deleted successfully." });
+}
 
 }
