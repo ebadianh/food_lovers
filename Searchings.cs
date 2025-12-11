@@ -15,6 +15,17 @@ namespace server
             decimal PackagePrice
         );
 
+        public record Get_All_Packages_For_User(
+            int Id,
+            int UserId,
+            int PackageId,
+            DateTime Checkin,
+            DateTime Checkout,
+            int NumberOfTravelers,
+            BookingStatus Status
+        );
+
+
         // More detailed package data (description + distances + POI)
         public record PackageDetails(
             string TripPackage,
@@ -116,6 +127,58 @@ namespace server
 
             return results;
         }
+ public static async Task<IResult> GetAllPackagesForUser(Config config, HttpContext ctx)
+    {
+        int? userId = ctx.Session.GetInt32("user_id");
+        if (userId is null)
+        {
+        // if not logged in, not allowed to retrieve data
+            return Results.Unauthorized();
+        }
+
+        List<Get_All_Packages_For_User> result = new();
+
+        string query = """
+                SELECT id, user_id, package_id, checkin, checkout, number_of_travelers, status
+                FROM bookings
+                WHERE user_id = @user_id;
+        """;
+
+         var parameters = new MySqlParameter[]
+    {
+        new("@user_id", userId.Value)
+    };
+
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+        {
+            while (await reader.ReadAsync())
+            {
+                int id = reader.GetInt32(0);
+                int user_Id = reader.GetInt32(1);
+                int packageId = reader.GetInt32(2);
+                DateTime checkin = reader.GetDateTime(3);
+                DateTime checkout = reader.GetDateTime(4);
+                int numberOfTravelers = reader.GetInt32(5);
+                string statusString = reader.GetString(6);
+
+                BookingStatus status = Enum.Parse<BookingStatus>(statusString, ignoreCase: true);
+
+                result.Add(new Get_All_Packages_For_User(
+                    id,
+                    user_Id,
+                    packageId,
+                    checkin,
+                    checkout,
+                    numberOfTravelers,
+                    status
+                ));
+            }
+        }
+
+        return Results.Ok(result);
+
+    }
+
 
         /// <summary>
         /// Detailed packages by country (includes descriptions, distances, POI).
