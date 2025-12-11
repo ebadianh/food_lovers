@@ -207,8 +207,8 @@ async Task db_reset_to_default(Config config)
             id INT PRIMARY KEY AUTO_INCREMENT,
             user_id INT NOT NULL,
             package_id INT NOT NULL,
-            checkin DATE NOT NULL,
-            checkout DATE NOT NULL,
+            checkin DATETIME NOT NULL,
+            checkout DATETIME NOT NULL,
             number_of_travelers INT NOT NULL,
             status ENUM('pending', 'confirmed', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
             FOREIGN KEY (user_id) REFERENCES users(id),
@@ -412,9 +412,10 @@ async Task db_reset_to_default(Config config)
         -- BOOKINGS
         -- ===========================
         INSERT INTO bookings (id, user_id, package_id, checkin, checkout, number_of_travelers, status) VALUES
-        (1, 1, 1, '2025-07-01', '2025-07-08', 2, 'confirmed'),
-        (2, 2, 2, '2025-09-10', '2025-09-15', 1, 'pending'),
-        (3, 3, 3, '2025-11-05', '2025-11-11', 4, 'confirmed');
+        (1, 1, 1, '2025-07-01 15:00:00', '2025-07-08 10:00:00', 2, 'confirmed'),
+        (2, 2, 2, '2025-09-10 12:00:00', '2025-09-15 09:00:00', 1, 'pending'),
+        (3, 3, 3, '2025-11-05 18:00:00', '2025-11-11 08:00:00', 4, 'confirmed');
+
 
         -- ===========================
         -- BOOKED ROOMS
