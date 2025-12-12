@@ -47,6 +47,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 
 // CRUD methods for bookings
 app.MapGet("/bookings", Bookings.GetAll);
+app.MapGet("/bookings/{bookingsId}/totalcost", Bookings.GetTotalCostByBooking);
 app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 
@@ -107,6 +108,7 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS room_types;
         DROP TABLE IF EXISTS countries;
         DROP TABLE IF EXISTS users;
+        DROP VIEW IF EXISTS receipt;
 
         -- db views dropped before created
         DROP VIEW IF EXISTS Room_type;
@@ -245,10 +247,31 @@ async Task db_reset_to_default(Config config)
             FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
             FOREIGN KEY (hotel_id, room_number) REFERENCES rooms(hotel_id, room_number) ON DELETE CASCADE
         );
-
         """;
 
-    string seed = """
+    string views = """
+        CREATE VIEW receipt AS (
+        SELECT
+        b.id AS booking,
+        CONCAT(u.first_name, ' ', u.last_name) AS name,
+        tp.name AS package,
+        b.number_of_travelers AS travelers,
+        tp.price_per_person AS price_per_person,
+        DATEDIFF(b.checkout, b.checkin) AS nights,
+        (tp.price_per_person * b.number_of_travelers) 
+        + COALESCE(SUM(br.price_per_night * DATEDIFF(b.checkout, b.checkin)), 0) AS total
+        FROM bookings b
+        JOIN trip_packages tp ON b.package_id = tp.id
+        LEFT JOIN booked_rooms br ON b.id = br.booking_id
+        JOIN users AS u ON b.user_id = u.id
+        WHERE b.id = 1
+        GROUP BY b.id, u.first_name, u.last_name, tp.name, b.number_of_travelers, tp.price_per_person, b.checkin, b.checkout
+        );
+        """;
+
+
+
+    string seeds = """
 
         SET FOREIGN_KEY_CHECKS = 0;
         TRUNCATE TABLE booked_rooms;
@@ -440,7 +463,8 @@ async Task db_reset_to_default(Config config)
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, seed);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, views);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, seeds);
 }
 
 
