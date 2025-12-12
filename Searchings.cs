@@ -10,7 +10,6 @@ namespace server
             string Country,
             string City,
             string HotelName,
-            int RoomCapacity,
             int Stars,
             decimal PackagePrice
         );
@@ -66,7 +65,7 @@ namespace server
             string Facilities
         );
 
-                public static async Task<List<GetAllHotels>> GetAllHotelsByPreference(
+        public static async Task<List<GetAllHotels>> GetAllHotelsByPreference(
             Config config,
             string country,
             DateTime checkin,
@@ -255,7 +254,6 @@ namespace server
                     c.name, 
                     d.city, 
                     h.name, 
-                    r.capacity, 
                     h.stars, 
                     tp.price_per_person
                 FROM trip_packages AS tp
@@ -263,8 +261,7 @@ namespace server
                 JOIN destinations AS d ON pi.destination_id = d.id
                 JOIN hotels AS h ON d.id = h.destination_id
                 JOIN countries AS c ON c.id = d.country_id
-                JOIN rooms AS r ON h.id = r.hotel_id
-                WHERE 1 = 1
+                WHERE 1 = 1;
             ";
 
             await using var cmd = new MySqlCommand();
@@ -312,8 +309,7 @@ namespace server
                     reader.GetString(2),
                     reader.GetString(3),
                     reader.GetInt32(4),
-                    reader.GetInt32(5),
-                    reader.GetDecimal(6)
+                    reader.GetDecimal(5)
                 ));
             }
 
