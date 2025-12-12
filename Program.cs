@@ -53,10 +53,6 @@ app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
-app.MapGet("/searchings/facilities", Searchings.GetHotelByFacilities);
-app.MapGet("/searchings/wifi", Searchings.GetHotelByWiFi);
-app.MapGet("/searchings/stars", Searchings.GetHotelByStars);
-app.MapGet("/searchings/distance", Searchings.GetHotelByDistanceToC);
 app.MapGet("/searchings/user", Searchings.GetAllPackagesForUser);
 
 
@@ -65,17 +61,44 @@ app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
 
 
 app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
-/*
-app.MapGet("/search/hotels", async (
-    Config config, 
+app.MapGet("/search/hotels/filters", async (
+    Config config,
     string country,
-    DateOnly checkin,
-    DateOnly checkout,
-    int travelers) =>
+    DateTime checkin,
+    DateTime checkout,
+    int total_travelers,
+    string? city,
+    string? hotelName,
+    int? minStars,
+    double? maxDistanceToCenter,
+    string? facilities) =>
 {
-    return await Searchings.GetAllHotelsByPreference(config, country, checkin, checkout, travelers);
+    List<string>? facilitiesList = null;
+    if (!string.IsNullOrWhiteSpace(facilities))
+    {
+        facilitiesList = facilities.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                   .Select(f => f.Trim())
+                                   .ToList();
+    }
+
+    var filter = new Searchings.ApplyFiltersRequest(
+        country,
+        checkin,
+        checkout,
+        total_travelers,
+        city,
+        hotelName,
+        facilitiesList,
+        minStars,
+        maxDistanceToCenter
+    );
+    
+    var hotels = await Searchings.GetAllHotelsByFilters(config, filter);
+    return Results.Ok(hotels);
 });
-*/
+
+
+
 app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
 {
     return await Searchings.GetAllPackagesByCountry(config, country);
