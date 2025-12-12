@@ -137,7 +137,7 @@ namespace server
             cmd.Parameters.AddWithValue("@checkout", filter.Checkout);
             cmd.Parameters.AddWithValue("@total_travelers", filter.TotalTravelers);
 
-            // Additional filters
+            // Optional filters
             if (!string.IsNullOrWhiteSpace(filter.City))
             {
                 query += " AND d.city LIKE @city";
@@ -176,11 +176,10 @@ namespace server
                 }
                 
                 query += $") THEN f.name END) = {filter.Facilities.Count}";
-                query += " AND SUM(rt.capacity) >= @total_travelers";  // Add with AND
+                query += " AND SUM(rt.capacity) >= @total_travelers";
             }
             else
             {
-                // If no facilities filter, just check capacity
                 query += " HAVING SUM(rt.capacity) >= @total_travelers";
             }
 

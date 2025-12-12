@@ -69,9 +69,8 @@ app.MapGet("/search/hotels/filters", async (
     string? hotelName,
     int? minStars,
     double? maxDistanceToCenter,
-    string? facilities) =>  // Changed to single string
+    string? facilities) =>
 {
-    // Parse facilities from comma-separated string
     List<string>? facilitiesList = null;
     if (!string.IsNullOrWhiteSpace(facilities))
     {
