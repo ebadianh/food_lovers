@@ -23,9 +23,18 @@ class Bookings
         int NumberOfTravelers,
         BookingStatus Status
     );
-
-        // DTO FOR POST BOOKINGS (doesn't take in id or userID)
-       public record Post_Args(
+    // DTO FOR GET ALL PACKAGES FOR USER ENDPOINT
+    public record Get_All_Packages_For_User(
+        int Id,
+        int UserId,
+        int PackageId,
+        DateTime Checkin,
+        DateTime Checkout,
+        int NumberOfTravelers,
+        BookingStatus Status
+    );
+    // DTO FOR POST BOOKINGS (doesn't take in id or userID)
+    public record Post_Args(
         int PackageId,
         DateTime Checkin,
         DateTime Checkout,
@@ -167,5 +176,49 @@ public static async Task<IResult> Delete(int id, HttpContext ctx, Config config)
     // 4. return SUCCESS MESSAGE
     return Results.Ok(new { message = "Booking deleted successfully." });
 }
+public static async Task<IResult> GetAllPackagesForUser(Config config, HttpContext ctx)
+        {
+            int? userId = ctx.Session.GetInt32("user_id");
+            if (userId is null)
+                return Results.Unauthorized();
 
+            List<Get_All_Packages_For_User> result = new();
+
+            const string query = """
+                SELECT id, user_id, package_id, checkin, checkout, number_of_travelers, status
+                FROM bookings
+                WHERE user_id = @user_id;
+                """;
+
+            var parameters = new MySqlParameter[]
+                {
+                    new("@user_id", userId.Value)
+                };
+
+            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+            while (await reader.ReadAsync())
+            {
+                int id = reader.GetInt32(0);
+                int user_Id = reader.GetInt32(1);
+                int packageId = reader.GetInt32(2);
+                DateTime checkin = reader.GetDateTime(3);
+                DateTime checkout = reader.GetDateTime(4);
+                int numberOfTravelers = reader.GetInt32(5);
+                string statusString = reader.GetString(6);
+
+                BookingStatus status = Enum.Parse<BookingStatus>(statusString, ignoreCase: true);
+
+                result.Add(new Get_All_Packages_For_User(
+                    id,
+                    user_Id,
+                    packageId,
+                    checkin,
+                    checkout,
+                    numberOfTravelers,
+                    status
+                ));
+            }
+
+            return Results.Ok(result);
+        }
 }
