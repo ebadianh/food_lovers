@@ -36,6 +36,7 @@ app.UseSwaggerUI();
 // session / login / logout examples (auth resource)
 app.MapGet("/login", Login.Get);
 app.MapPost("/login", Login.Post);
+app.MapPost("/login/admin", Login.PostAdmin);
 app.MapDelete("/login", Login.Delete);
 
 // CRUD examples (user resource)
@@ -131,6 +132,7 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS room_types;
         DROP TABLE IF EXISTS countries;
         DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS admins;
 
         -- db views dropped before created
         DROP VIEW IF EXISTS Room_type;
@@ -147,6 +149,14 @@ async Task db_reset_to_default(Config config)
             email VARCHAR(256) NOT NULL UNIQUE,
             password VARCHAR(256) NOT NULL,
             CONSTRAINT chk_email_format CHECK (email LIKE '%_@_%._%')
+        );
+
+        -- ADMINS table
+        CREATE TABLE admins (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            email VARCHAR(256) NOT NULL UNIQUE,
+            password VARCHAR(256) NOT NULL,
+            CONSTRAINT chk_a_email_format CHECK (email LIKE '%_@_%._%')
         );
 
         -- COUNTRIES table
@@ -297,6 +307,13 @@ async Task db_reset_to_default(Config config)
         (1, 'Anna', 'Svensson', 'anna@example.com', 'password123'),
         (2, 'Johan', 'Larsson', 'johan@example.com', 'password123'),
         (3, 'Maria', 'Gonzalez', 'maria@example.com', 'password123');
+
+        -- ===========================
+        -- ADMINS
+        -- ===========================
+        INSERT INTO admins (id, email, password) VALUES 
+        (1, 'christian@example.com', '123');
+
 
         -- ===========================
         -- COUNTRIES
