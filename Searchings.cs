@@ -52,67 +52,7 @@ namespace server
             decimal? MaxPrice = null
         );
 
-
-        public static async Task<List<GetAllHotels>> GetAllHotelsByPreference(
-            Config config,
-            string country,
-            DateTime checkin,
-            DateTime checkout,
-            int total_travelers)
-        {
-            List<GetAllHotels> result = new();
-
-            string query = @"
-                SELECT
-                    h.id AS hotel_id,
-                    h.name AS hotel_name,
-                    c.name AS country,
-                    d.city,
-                    SUM(rt.capacity) AS total_hotel_capacity,
-                    COUNT(r.hotel_id) AS total_available_rooms
-                FROM hotels h
-                JOIN destinations AS d ON d.id = h.destination_id
-                JOIN countries AS c ON c.id = d.country_id
-                JOIN rooms AS r ON r.hotel_id = h.id
-                JOIN room_types AS rt ON rt.id = r.roomtype_id
-                LEFT JOIN booked_rooms AS br 
-                    ON br.hotel_id = r.hotel_id 
-                    AND br.room_number = r.room_number
-                LEFT JOIN bookings AS b
-                    ON b.id = br.booking_id 
-                    AND b.checkin < @checkout 
-                    AND b.checkout > @checkin
-                WHERE br.booking_id IS NULL
-                  AND LOWER(c.name) = LOWER(@country)
-                GROUP BY h.id, h.name, c.name, d.city
-                HAVING SUM(rt.capacity) >= @total_travelers;
-            ";
-
-            await using var conn = new MySqlConnection(config.db);
-            await conn.OpenAsync();
-
-            await using var cmd = new MySqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@country", country);
-            cmd.Parameters.AddWithValue("@checkin", checkin);
-            cmd.Parameters.AddWithValue("@checkout", checkout);
-            cmd.Parameters.AddWithValue("@total_travelers", total_travelers);
-
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                result.Add(new GetAllHotels(
-                    reader.GetInt32(0),
-                    reader.GetString(1),
-                    reader.GetString(2),
-                    reader.GetString(3),
-                    reader.GetInt32(4),
-                    reader.GetInt32(5)
-                ));
-            }
-
-            return result;
-        }
-        public static async Task<List<HotelFilterResult>> GetAllHotelsByFilters(
+        public static async Task<List<HotelFilterResult>> GetAllHotelsFiltered(
             Config config,
             HotelFilterRequest filter)
         {
@@ -389,8 +329,9 @@ namespace server
                 maxDistanceToCenter
             );
             
-            var hotels = await GetAllHotelsByFilters(config, filter);
+            var hotels = await GetAllHotelsFiltered(config, filter);
             return Results.Ok(hotels);
         }
+
     }
 }

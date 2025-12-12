@@ -61,8 +61,13 @@ app.MapGet("/packages", Searchings.GetPackages); // get all packages with option
 //  GET http://localhost:5240/packages?search=street food
 //  GET http://localhost:5240/packages?country=France&minStars=4&maxPrice=1500
 
-app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference); //
-app.MapGet("/search/hotels/filters", Searchings.GetFilters);
+app.MapGet("/hotels", Searchings.GetFilters);
+// GET /hotels?country=Italy&minStars=4
+// GET /hotels?country=Italy&checkin=2025-07-01T15:00:00&checkout=2025-07-08T10:00:00&total_travelers=2
+// GET /hotels?city=Rome&facilities=Pool,Spa
+// GET /hotels?country=Italy&checkin=2025-07-01T15:00:00&checkout=2025-07-08T10:00:00&total_travelers=2&city=Rome&minStars=4
+
+
 
 
 // special, reset db
