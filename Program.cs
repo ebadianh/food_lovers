@@ -47,7 +47,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 
 // CRUD methods for bookings
 app.MapGet("/bookings", Bookings.GetAll);
-app.MapGet("/bookings/{id}/totalcost", Bookings.GetTotalCostByBooking);
+app.MapGet("/bookings/{bookingsId}/totalcost", Bookings.GetTotalCostByBooking);
 app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 
@@ -105,7 +105,7 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS room_types;
         DROP TABLE IF EXISTS countries;
         DROP TABLE IF EXISTS users;
-        DROP VIEW IF EXISTS receipts;
+        DROP VIEW IF EXISTS receipt;
 
         -- db views dropped before created
         DROP VIEW IF EXISTS Room_type;
@@ -247,7 +247,7 @@ async Task db_reset_to_default(Config config)
         """;
 
     string views = """
-        CREATE VIEW receipt AS
+        CREATE VIEW receipt AS (
         SELECT
         b.id AS booking,
         CONCAT(u.first_name, ' ', u.last_name) AS name,
@@ -259,10 +259,10 @@ async Task db_reset_to_default(Config config)
         + COALESCE(SUM(br.price_per_night * DATEDIFF(b.checkout, b.checkin)), 0) AS total
         FROM bookings b
         JOIN trip_packages tp ON b.package_id = tp.id
-        JOIN booked_rooms br ON b.id = br.booking_id
-        JOIN users AS u ON b.id = u.id
+        LEFT JOIN booked_rooms br ON b.id = br.booking_id
+        JOIN users AS u ON b.user_id = u.id
         WHERE b.id = 1
-        GROUP BY b.id, tp.name, b.number_of_travelers, tp.price_per_person, b.checkin, b.checkout;
+        GROUP BY b.id, u.first_name, u.last_name, tp.name, b.number_of_travelers, tp.price_per_person, b.checkin, b.checkout
         );
         """;
 

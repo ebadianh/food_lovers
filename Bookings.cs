@@ -183,7 +183,7 @@ class Bookings
         int? userId = ctx.Session.GetInt32("user_id");
         if (userId is null)
         {
-            return null;
+            return Results.Unauthorized();
         }
 
         string query = """
@@ -191,14 +191,14 @@ class Bookings
         booking,
         name,
         package,
-        travelers
+        travelers,
         price_per_person,
         nights,
         total
         FROM receipts
-        WHERE booking = 1
+        WHERE booking = @bookingsId
         """;
-        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, new MySqlParameter("@bookingId", bookingsId));
+        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, new MySqlParameter("@bookingsId", bookingsId));
         if (await reader.ReadAsync())
         {
             return new Receipt(
@@ -210,6 +210,7 @@ class Bookings
                 reader.GetInt32(5),
                 reader.GetDecimal(6)
             );
+            return Results.Ok(receipt);
         }
         return null;
     }
