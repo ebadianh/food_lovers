@@ -52,57 +52,19 @@ app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 
 
 // CRUD methods for searchings
-app.MapGet("/searchings", Searchings.GetAllPackages);
 app.MapGet("/searchings/user", Searchings.GetAllPackagesForUser);
 
 
 // CRUD Methods for packages
-app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
-
+app.MapGet("/packages", Searchings.GetPackages);
+//  GET http://localhost:5240/packages?country=Italy
+//  GET http://localhost:5240/packages?maxPrice=1000
+//  GET http://localhost:5240/packages?search=street food
+//  GET http://localhost:5240/packages?country=France&minStars=4&maxPrice=1500
 
 app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
-app.MapGet("/search/hotels/filters", async (
-    Config config,
-    string country,
-    DateTime checkin,
-    DateTime checkout,
-    int total_travelers,
-    string? city,
-    string? hotelName,
-    int? minStars,
-    double? maxDistanceToCenter,
-    string? facilities) =>
-{
-    List<string>? facilitiesList = null;
-    if (!string.IsNullOrWhiteSpace(facilities))
-    {
-        facilitiesList = facilities.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                   .Select(f => f.Trim())
-                                   .ToList();
-    }
+app.MapGet("/search/hotels/filters", Searchings.GetFilters);
 
-    var filter = new Searchings.ApplyFiltersRequest(
-        country,
-        checkin,
-        checkout,
-        total_travelers,
-        city,
-        hotelName,
-        facilitiesList,
-        minStars,
-        maxDistanceToCenter
-    );
-    
-    var hotels = await Searchings.GetAllHotelsByFilters(config, filter);
-    return Results.Ok(hotels);
-});
-
-
-
-app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
-{
-    return await Searchings.GetAllPackagesByCountry(config, country);
-});
 
 // special, reset db
 app.MapDelete("/db", db_reset_to_default);
@@ -178,10 +140,11 @@ async Task db_reset_to_default(Config config)
             destination_id INT NOT NULL,
             stop_order INT NOT NULL,
             nights TINYINT NOT NULL,
-            PRIMARY KEY (package_id, destination_id),
+            PRIMARY KEY (package_id, stop_order),
             FOREIGN KEY (package_id) REFERENCES trip_packages(id) ON DELETE CASCADE,
             FOREIGN KEY (destination_id) REFERENCES destinations(id) ON DELETE CASCADE
         );
+
 
         -- HOTELS table
         CREATE TABLE hotels (
@@ -303,7 +266,10 @@ async Task db_reset_to_default(Config config)
         INSERT INTO countries (id, name, cuisine) VALUES
         (1, 'Italy', 'Italian'),
         (2, 'Japan', 'Japanese'),
-        (3, 'Mexico', 'Mexican');
+        (3, 'Mexico', 'Mexican'),
+        (4, 'France', 'French'),
+        (5, 'Thailand', 'Thai'),
+        (6, 'Spain', 'Spanish');
 
         -- ===========================
         -- DESTINATIONS
@@ -312,24 +278,47 @@ async Task db_reset_to_default(Config config)
         (1, 1, 'Rome', 'Historic capital with amazing pasta, pizza and wine.'),
         (2, 1, 'Florence', 'Art, architecture and Tuscan food.'),
         (3, 2, 'Tokyo', 'Lively metropolis, sushi, ramen and izakayas.'),
-        (4, 3, 'Cancún', 'Beach destination with tacos, seafood and nightlife.');
+        (4, 3, 'Cancún', 'Beach destination with tacos, seafood and nightlife.'),
+        (5, 4, 'Paris', 'City of lights with world-class pastries, wine and cheese.'),
+        (6, 4, 'Lyon', 'Gastronomic capital of France with bouchons and markets.'),
+        (7, 5, 'Bangkok', 'Street food paradise with pad thai, curries and night markets.'),
+        (8, 6, 'Barcelona', 'Mediterranean cuisine with tapas, paella and seafood.');
 
         -- ===========================
-        -- TRIP PACKAGES
+        -- TRIP_PACKAGES
         -- ===========================
         INSERT INTO trip_packages (id, name, description, price_per_person) VALUES
         (1, 'Taste of Italy - Rome & Florence', '7 nights focusing on classic Italian food and culture.', 1299.00),
         (2, 'Tokyo Street Food Adventure', '5 nights in Tokyo exploring ramen, sushi and izakayas.', 999.00),
-        (3, 'Beach & Tacos in Cancún', '6 nights all-inclusive with Mexican food experiences.', 899.00);
-
+        (3, 'Beach & Tacos in Cancún', '6 nights all-inclusive with Mexican food experiences.', 899.00),
+        (4, 'French Culinary Journey', '8 nights discovering Parisian patisseries and Lyonnaise cuisine.', 1499.00),
+        (5, 'Bangkok Street Eats', '6 nights immersed in Thai street food and cooking classes.', 799.00),
+        (6, 'Tapas Trail through Barcelona', '5 nights exploring Catalan tapas bars and seafood markets.', 1099.00);
+       
         -- ===========================
         -- PACKAGE ITINERARIES
         -- ===========================
         INSERT INTO package_itineraries (package_id, destination_id, stop_order, nights) VALUES
-        (1, 1, 1, 3),  -- Italy: Rome 3 nights
-        (1, 2, 2, 4),  -- Italy: Florence 4 nights
-        (2, 3, 1, 5),  -- Tokyo only
-        (3, 4, 1, 6);  -- Cancún only
+        -- Package 1: Taste of Italy (Rome 3 nights → Florence 4 nights)
+        (1, 1, 1, 3),
+        (1, 2, 2, 4),
+
+        -- Package 2: Tokyo Street Food (Tokyo only, 5 nights)
+        (2, 3, 1, 5),
+
+        -- Package 3: Beach & Tacos (Cancún only, 6 nights)
+        (3, 4, 1, 6),
+
+        -- Package 4: French Culinary Journey (Paris 4 nights → Lyon 4 nights)
+        (4, 5, 1, 4),
+        (4, 6, 2, 4),
+
+        -- Package 5: Bangkok Street Eats (Bangkok only, 6 nights)
+        (5, 7, 1, 6),
+
+        -- Package 6: Tapas Trail (Barcelona only, 5 nights)
+        (6, 8, 1, 5);
+
 
         -- ===========================
         -- HOTELS
@@ -338,7 +327,12 @@ async Task db_reset_to_default(Config config)
         (1, 1, 'Hotel Roma Centro', 'Boutique hotel near the historic center.', 4, 0.5),
         (2, 2, 'Florence Riverside Hotel', 'Charming hotel by the river in Florence.', 4, 1.0),
         (3, 3, 'Tokyo Shibuya Stay', 'Modern hotel close to Shibuya Crossing.', 3, 0.3),
-        (4, 4, 'Cancún Beach Resort', 'Resort directly on the beach with pool and bar.', 5, 2.0);
+        (4, 4, 'Cancún Beach Resort', 'Resort directly on the beach with pool and bar.', 5, 2.0),
+        (5, 5, 'Paris Marais Boutique', 'Elegant hotel in the heart of Le Marais district.', 4, 0.8),
+        (6, 6, 'Lyon Bouchon Inn', 'Traditional hotel near famous bouchon restaurants.', 3, 1.2),
+        (7, 7, 'Bangkok Riverside Hotel', 'Modern hotel overlooking the Chao Phraya River.', 4, 0.6),
+        (8, 8, 'Barcelona Gothic Stay', 'Charming hotel in the Gothic Quarter near La Rambla.', 4, 0.4);
+
 
         -- ===========================
         -- POI_DISTANCES (reference POIs)
