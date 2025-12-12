@@ -49,6 +49,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 app.MapGet("/bookings", Bookings.GetAll);
 app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
+app.MapPut("/bookings/{bookingId:int}", Bookings.Put);
 
 
 // CRUD methods for searchings

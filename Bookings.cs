@@ -1,4 +1,5 @@
 using MySql.Data.MySqlClient;
+using MySqlX.XDevAPI.Common;
 
 namespace server;
 
@@ -167,5 +168,53 @@ public static async Task<IResult> Delete(int id, HttpContext ctx, Config config)
     // 4. return SUCCESS MESSAGE
     return Results.Ok(new { message = "Booking deleted successfully." });
 }
+
+    public record Put_Booking(      
+        int PackageId,
+        DateTime Checkin,
+        DateTime Checkout,
+        int NumberOfTravelers,
+        string Status);
+
+    public static async Task<IResult> Put(int bookingId, Put_Booking body, Config config, HttpContext ctx)
+    {
+
+        int? userId = ctx.Session.GetInt32("user_id");
+        if (userId == null)
+        {
+            return Results.Unauthorized();
+        }
+
+        string query = """
+        UPDATE bookings 
+        SET package_id = @package_id, 
+        checkin = @checkin, 
+        checkout = @checkout, 
+        number_of_travelers = 
+        @number_of_travelers, 
+        status = @status 
+        WHERE id = @id AND user_id = @user_id
+     """;
+
+        var parameters = new MySqlParameter[]
+        {
+        new("@package_id", body.PackageId),
+        new("@checkin", body.Checkin),
+        new("@checkout", body.Checkout),
+        new("@number_of_travelers", body.NumberOfTravelers),
+        new("@status", body.Status),
+        new("@id", bookingId),
+        new("@user_id", userId.Value)
+        };
+
+        int rows = await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+
+        if (rows == 0)
+        {
+            return Results.NotFound("Booking not found or not owned by user");
+        }
+
+        return Results.NoContent();
+    }
 
 }
