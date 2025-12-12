@@ -51,7 +51,6 @@ app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 
 
-
 // CRUD methods for searchings
 app.MapGet("/searchings", Searchings.GetAllPackages);
 app.MapGet("/searchings/facilities", Searchings.GetHotelByFacilities);
@@ -59,6 +58,10 @@ app.MapGet("/searchings/wifi", Searchings.GetHotelByWiFi);
 app.MapGet("/searchings/stars", Searchings.GetHotelByStars);
 app.MapGet("/searchings/distance", Searchings.GetHotelByDistanceToC);
 app.MapGet("/searchings/user", Searchings.GetAllPackagesForUser);
+
+
+// CRUD Methods for packages
+app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
 
 
 app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
