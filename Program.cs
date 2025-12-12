@@ -327,16 +327,45 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- HOTELS
         -- ===========================
+        -- Rome (4 hotels)
         INSERT INTO hotels (id, destination_id, name, description, stars, distance_to_center) VALUES
         (1, 1, 'Hotel Roma Centro', 'Boutique hotel near the historic center.', 4, 0.5),
-        (2, 2, 'Florence Riverside Hotel', 'Charming hotel by the river in Florence.', 4, 1.0),
-        (3, 3, 'Tokyo Shibuya Stay', 'Modern hotel close to Shibuya Crossing.', 3, 0.3),
-        (4, 4, 'Cancún Beach Resort', 'Resort directly on the beach with pool and bar.', 5, 2.0),
-        (5, 5, 'Paris Marais Boutique', 'Elegant hotel in the heart of Le Marais district.', 4, 0.8),
-        (6, 6, 'Lyon Bouchon Inn', 'Traditional hotel near famous bouchon restaurants.', 3, 1.2),
-        (7, 7, 'Bangkok Riverside Hotel', 'Modern hotel overlooking the Chao Phraya River.', 4, 0.6),
-        (8, 8, 'Barcelona Gothic Stay', 'Charming hotel in the Gothic Quarter near La Rambla.', 4, 0.4);
-
+        (2, 1, 'Colosseum View Inn', 'Budget-friendly hotel with views of the Colosseum.', 3, 0.8),
+        (3, 1, 'Vatican Luxury Suites', 'Upscale accommodation near Vatican City.', 5, 1.2),
+        (4, 1, 'Trastevere Charming Stay', 'Cozy hotel in the trendy Trastevere district.', 3, 1.5),
+        -- Florence (4 hotels)
+        (5, 2, 'Florence Riverside Hotel', 'Charming hotel by the river in Florence.', 4, 1.0),
+        (6, 2, 'Duomo Grand Hotel', 'Elegant hotel steps from the cathedral.', 5, 0.3),
+        (7, 2, 'Tuscan Hills Retreat', 'Peaceful hotel with Tuscan countryside views.', 3, 3.5),
+        (8, 2, 'Ponte Vecchio Boutique', 'Historic hotel overlooking the famous bridge.', 4, 0.6),
+        -- Tokyo (4 hotels)
+        (9, 3, 'Tokyo Shibuya Stay', 'Modern hotel close to Shibuya Crossing.', 3, 0.3),
+        (10, 3, 'Shinjuku Skyscraper Hotel', 'High-rise hotel in bustling Shinjuku.', 4, 0.5),
+        (11, 3, 'Asakusa Temple Inn', 'Traditional ryokan-style near Senso-ji Temple.', 3, 2.0),
+        (12, 3, 'Ginza Luxury Tower', 'Premium hotel in upscale Ginza district.', 5, 1.0),
+        -- Cancún (3 hotels)
+        (13, 4, 'Cancún Beach Resort', 'Resort directly on the beach with pool and bar.', 5, 2.0),
+        (14, 4, 'Hotel Zone Paradise', 'All-inclusive beachfront resort.', 4, 1.5),
+        (15, 4, 'Downtown Cancún Budget Stay', 'Affordable hotel in city center.', 2, 0.5),
+        -- Paris (4 hotels)
+        (16, 5, 'Paris Marais Boutique', 'Elegant hotel in the heart of Le Marais district.', 4, 0.8),
+        (17, 5, 'Eiffel Tower View Hotel', 'Romantic hotel with tower views.', 5, 1.5),
+        (18, 5, 'Latin Quarter Hostel & Hotel', 'Budget option in student quarter.', 2, 0.6),
+        (19, 5, 'Champs-Élysées Grand', 'Luxury hotel on famous avenue.', 5, 0.4),
+        -- Lyon (3 hotels)
+        (20, 6, 'Lyon Bouchon Inn', 'Traditional hotel near famous bouchon restaurants.', 3, 1.2),
+        (21, 6, 'Presqu''île Business Hotel', 'Modern hotel in city center peninsula.', 4, 0.5),
+        (22, 6, 'Vieux Lyon Historic Stay', 'Charming hotel in Old Lyon.', 3, 0.8),
+        -- Bangkok (4 hotels)
+        (23, 7, 'Bangkok Riverside Hotel', 'Modern hotel overlooking the Chao Phraya River.', 4, 0.6),
+        (24, 7, 'Khao San Road Hostel', 'Budget backpacker accommodation.', 2, 1.0),
+        (25, 7, 'Sukhumvit Sky Hotel', 'High-rise hotel in shopping district.', 4, 2.5),
+        (26, 7, 'Grand Palace Luxury', 'Five-star hotel near major attractions.', 5, 0.8),
+        -- Barcelona (4 hotels)
+        (27, 8, 'Barcelona Gothic Stay', 'Charming hotel in the Gothic Quarter near La Rambla.', 4, 0.4),
+        (28, 8, 'Sagrada Familia View Hotel', 'Modern hotel with basilica views.', 4, 1.0),
+        (29, 8, 'Barceloneta Beach Hotel', 'Beachfront hotel in beach district.', 3, 2.0),
+        (30, 8, 'Eixample Design Hotel', 'Contemporary hotel in modernist district.', 5, 0.7);
 
         -- ===========================
         -- POI_DISTANCES (reference POIs)
@@ -361,17 +390,15 @@ async Task db_reset_to_default(Config config)
         (1, 1, 1, 0.8),
         (2, 1, 2, 0.6),
         (3, 1, 3, 1.5),
+        (4, 5, 4, 1.2),
+        (5, 5, 5, 0.7),
+        (6, 9, 6, 0.2),
+        (7, 9, 7, 3.0),
+        (8, 9, 8, 5.5),
+        (9, 13, 9, 0.0),
+        (10, 13, 10, 5.0),
+        (11, 13, 11, 18.0);
 
-        (4, 2, 4, 1.2),
-        (5, 2, 5, 0.7),
-
-        (6, 3, 6, 0.2),
-        (7, 3, 7, 3.0),
-        (8, 3, 8, 5.5),
-
-        (9, 4, 9, 0.0),
-        (10, 4, 10, 5.0),
-        (11, 4, 11, 18.0);
 
         -- ===========================
         -- ROOM TYPES (lookup table)
@@ -387,31 +414,66 @@ async Task db_reset_to_default(Config config)
         -- ===========================
 
         INSERT INTO rooms (hotel_id, room_number, roomtype_id) VALUES
-            -- Hotel 1: Mixed room types (7 rooms)
-            (1, 101, 1),  -- Single
-            (1, 102, 1),  -- Single
-            (1, 103, 2),  -- Double
-            (1, 104, 2),  -- Double
-            (1, 105, 3),  -- Family
-            (1, 106, 3),  -- Family
-            (1, 107, 4),  -- Suite
-
-            -- Hotel 2: Mostly family-oriented (4 rooms)
-            (2, 201, 2),  -- Double
-            (2, 202, 2),  -- Double
-            (2, 203, 3),  -- Family
-            (2, 204, 4),  -- Suite
-
-            -- Hotel 3: Budget hotel (4 rooms)
-            (3, 301, 1),  -- Single
-            (3, 302, 1),  -- Single
-            (3, 303, 2),  -- Double
-            (3, 304, 2),  -- Double
-
-            -- Hotel 4: Luxury resort (2 rooms)
-            (4, 401, 3),  -- Family
-            (4, 402, 4);  -- Suite
-
+        -- Hotel 1: Mixed room types (7 rooms)
+        (1, 101, 1), (1, 102, 1), (1, 103, 2), (1, 104, 2), (1, 105, 3), (1, 106, 3), (1, 107, 4),
+        -- Hotel 2: Colosseum View Inn (6 rooms)
+        (2, 201, 1), (2, 202, 1), (2, 203, 2), (2, 204, 2), (2, 205, 2), (2, 206, 3),
+        -- Hotel 3: Vatican Luxury Suites (4 rooms)
+        (3, 301, 3), (3, 302, 3), (3, 303, 4), (3, 304, 4),
+        -- Hotel 4: Trastevere Charming Stay (5 rooms)
+        (4, 401, 1), (4, 402, 1), (4, 403, 2), (4, 404, 2), (4, 405, 3),
+        -- Hotel 5: Florence Riverside Hotel (4 rooms)
+        (5, 501, 2), (5, 502, 2), (5, 503, 3), (5, 504, 4),
+        -- Hotel 6: Duomo Grand Hotel (3 rooms)
+        (6, 601, 3), (6, 602, 4), (6, 603, 4),
+        -- Hotel 7: Tuscan Hills Retreat (4 rooms)
+        (7, 701, 2), (7, 702, 2), (7, 703, 3), (7, 704, 3),
+        -- Hotel 8: Ponte Vecchio Boutique (4 rooms)
+        (8, 801, 2), (8, 802, 2), (8, 803, 3), (8, 804, 4),
+        -- Hotel 9: Tokyo Shibuya Stay (4 rooms)
+        (9, 901, 1), (9, 902, 1), (9, 903, 2), (9, 904, 2),
+        -- Hotel 10: Shinjuku Skyscraper (8 rooms)
+        (10, 1001, 1), (10, 1002, 1), (10, 1003, 2), (10, 1004, 2), (10, 1005, 2), (10, 1006, 2), (10, 1007, 3), (10, 1008, 4),
+        -- Hotel 11: Asakusa Temple Inn (6 rooms)
+        (11, 1101, 1), (11, 1102, 1), (11, 1103, 2), (11, 1104, 2), (11, 1105, 3), (11, 1106, 3),
+        -- Hotel 12: Ginza Luxury Tower (5 rooms)
+        (12, 1201, 3), (12, 1202, 3), (12, 1203, 4), (12, 1204, 4), (12, 1205, 4),
+        -- Hotel 13: Cancún Beach Resort (2 rooms)
+        (13, 1301, 3), (13, 1302, 4),
+        -- Hotel 14: Hotel Zone Paradise (6 rooms)
+        (14, 1401, 2), (14, 1402, 2), (14, 1403, 3), (14, 1404, 3), (14, 1405, 4), (14, 1406, 4),
+        -- Hotel 15: Downtown Cancún Budget (8 rooms)
+        (15, 1501, 1), (15, 1502, 1), (15, 1503, 1), (15, 1504, 1), (15, 1505, 2), (15, 1506, 2), (15, 1507, 2), (15, 1508, 2),
+        -- Hotel 16: Paris Marais Boutique (4 rooms)
+        (16, 1601, 2), (16, 1602, 2), (16, 1603, 3), (16, 1604, 4),
+        -- Hotel 17: Eiffel Tower View Hotel (4 rooms)
+        (17, 1701, 3), (17, 1702, 3), (17, 1703, 4), (17, 1704, 4),
+        -- Hotel 18: Latin Quarter Hostel (5 rooms)
+        (18, 1801, 1), (18, 1802, 1), (18, 1803, 1), (18, 1804, 2), (18, 1805, 2),
+        -- Hotel 19: Champs-Élysées Grand (3 rooms)
+        (19, 1901, 4), (19, 1902, 4), (19, 1903, 4),
+        -- Hotel 20: Lyon Bouchon Inn (3 rooms)
+        (20, 2001, 2), (20, 2002, 2), (20, 2003, 3),
+        -- Hotel 21: Presqu'île Business Hotel (4 rooms)
+        (21, 2101, 1), (21, 2102, 2), (21, 2103, 2), (21, 2104, 3),
+        -- Hotel 22: Vieux Lyon Historic Stay (3 rooms)
+        (22, 2201, 2), (22, 2202, 2), (22, 2203, 3),
+        -- Hotel 23: Bangkok Riverside Hotel (4 rooms)
+        (23, 2301, 2), (23, 2302, 2), (23, 2303, 3), (23, 2304, 4),
+        -- Hotel 24: Khao San Road Hostel (4 rooms)
+        (24, 2401, 1), (24, 2402, 1), (24, 2403, 1), (24, 2404, 2),
+        -- Hotel 25: Sukhumvit Sky Hotel (4 rooms)
+        (25, 2501, 2), (25, 2502, 2), (25, 2503, 3), (25, 2504, 4),
+        -- Hotel 26: Grand Palace Luxury (4 rooms)
+        (26, 2601, 3), (26, 2602, 3), (26, 2603, 4), (26, 2604, 4),
+        -- Hotel 27: Barcelona Gothic Stay (4 rooms)
+        (27, 2701, 2), (27, 2702, 2), (27, 2703, 3), (27, 2704, 4),
+        -- Hotel 28: Sagrada Familia View Hotel (4 rooms)
+        (28, 2801, 2), (28, 2802, 3), (28, 2803, 3), (28, 2804, 4),
+        -- Hotel 29: Barceloneta Beach Hotel (4 rooms)
+        (29, 2901, 1), (29, 2902, 2), (29, 2903, 2), (29, 2904, 3),
+        -- Hotel 30: Eixample Design Hotel (4 rooms)
+        (30, 3001, 3), (30, 3002, 3), (30, 3003, 4), (30, 3004, 4);
 
         -- ===========================
         -- FACILITIES
@@ -428,17 +490,36 @@ async Task db_reset_to_default(Config config)
         -- ACCOMMODATION FACILITIES
         -- ===========================
         INSERT INTO accommodation_facilities (hotel_id, facility_id) VALUES
-        (1, 1),
-        (1, 2),
+        (1, 1), (1, 2),
         (2, 1),
-        (2, 2),
-        (3, 1),
-        (4, 1),
-        (4, 2),
-        (4, 3),
-        (4, 4),
-        (4, 5),
-        (4, 6);
+        (3, 1), (3, 2), (3, 3), (3, 4), (3, 6),
+        (4, 1), (4, 2),
+        (5, 1), (5, 2),
+        (6, 1), (6, 2), (6, 3), (6, 4),
+        (7, 1), (7, 2),
+        (8, 1), (8, 2), (8, 4),
+        (9, 1),
+        (10, 1), (10, 2), (10, 3),
+        (11, 1), (11, 2),
+        (12, 1), (12, 2), (12, 3), (12, 4), (12, 6),
+        (13, 1), (13, 2), (13, 3), (13, 4), (13, 5), (13, 6),
+        (14, 1), (14, 2), (14, 3), (14, 4), (14, 5), (14, 6),
+        (15, 1),
+        (16, 1), (16, 2), (16, 4),
+        (17, 1), (17, 2), (17, 3), (17, 4),
+        (18, 1),
+        (19, 1), (19, 2), (19, 3), (19, 4), (19, 6),
+        (20, 1), (20, 2),
+        (21, 1), (21, 2), (21, 3),
+        (22, 1), (22, 2),
+        (23, 1), (23, 2), (23, 3), (23, 4),
+        (24, 1),
+        (25, 1), (25, 2), (25, 3),
+        (26, 1), (26, 2), (26, 3), (26, 4), (26, 6),
+        (27, 1), (27, 2), (27, 4),
+        (28, 1), (28, 2), (28, 3),
+        (29, 1), (29, 2), (29, 5),
+        (30, 1), (30, 2), (30, 3), (30, 4);
 
         -- ===========================
         -- BOOKINGS
