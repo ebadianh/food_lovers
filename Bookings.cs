@@ -168,4 +168,69 @@ public static async Task<IResult> Delete(int id, HttpContext ctx, Config config)
     return Results.Ok(new { message = "Booking deleted successfully." });
 }
 
+
+// definerar datan som ska visas till user
+public record BookingDetails_Data(
+    int Id,
+    string Status, 
+    string PackageName, 
+    string Country, 
+    string City, 
+    string HotelName, 
+    decimal PricePerPerson
+);
+
+public static async Task<IResult> GetDetails(int id, Config config)
+    {  
+        // förbered en lista för att hålla resultat 
+        var details = new List<BookingDetails_Data>() ;
+
+        using var conn = new MySqlConnection(config.db); 
+        await conn.OpenAsync(); 
+
+        string query = """
+                SELECT 
+                b.id, 
+                b.status,
+                tp.name, 
+                c.name, 
+                d.city, 
+                h.name, 
+                tp.price_per_person
+                FROM bookings b 
+                JOIN trip_packages tp ON b.package_id = tp.id
+                JOIN package_itineraries pi ON tp.id = pi.package_id
+                JOIN destinations d ON pi.destination_id = d.id  
+                JOIN countries c ON d.country_id = c.id
+                JOIN hotels h ON d.id = h.destination_id
+                WHERE b.id = @id
+                """; 
+
+            using var cmd = new MySqlCommand(query, conn); 
+            cmd.Parameters.AddWithValue("@id", id); 
+
+            using var reader = await cmd.ExecuteReaderAsync(); 
+
+            while (reader.Read())
+        {
+            details.Add(new BookingDetails_Data(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetString(4),
+                reader.GetString(5),
+                reader.GetDecimal(6)
+            )); 
+        }
+
+        // if sats om listan är tom 
+        if (details.Count == 0)
+        {
+            return Results.NotFound(new { error = "Booking not found."}); 
+        }
+
+        return Results.Ok(details); 
+    }
+     
 }

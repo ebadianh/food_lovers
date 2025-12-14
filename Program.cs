@@ -49,7 +49,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 app.MapGet("/bookings", Bookings.GetAll);
 app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
-
+app.MapGet("/bookings/{id}", Bookings.GetDetails); 
 
 
 // CRUD methods for searchings
