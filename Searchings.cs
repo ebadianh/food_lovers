@@ -267,7 +267,8 @@ namespace server
             await conn.OpenAsync();
 
             const string sql = """
-                SELECT 
+                   SELECT  	
+                    h.name AS hotel_name,
                     tp.id,
                     tp.name,
                     tp.description,
@@ -277,6 +278,7 @@ namespace server
                 JOIN package_itineraries pi ON tp.id = pi.package_id
                 JOIN destinations d ON pi.destination_id = d.id
                 JOIN countries c ON d.country_id = c.id
+                JOIN hotels AS h ON d.id = h.destination_id
                 WHERE c.name = @country;
                 """;
 
@@ -289,6 +291,7 @@ namespace server
 
             while (await reader.ReadAsync())
             {
+                var hotelname = reader["hotel_name"]?.ToString() ?? "";
                 var id = Convert.ToInt32(reader["id"]);
                 var name = reader["name"]?.ToString() ?? "";
                 var description = reader["description"]?.ToString() ?? "";
@@ -296,7 +299,8 @@ namespace server
                 var cuisine = reader["cuisine"]?.ToString() ?? "";
 
                 result.Add(new
-                {
+                {   
+                    HotelName = hotelname,
                     PackageId = id,
                     Name = name,
                     Description = description,
