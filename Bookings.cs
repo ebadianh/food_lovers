@@ -35,8 +35,14 @@ class Bookings
     );
 
     // GET ALL BOOKINGS
-    public static async Task<List<GetAll_Data>> GetAll(Config config)
+    public static async Task<IResult> GetAll(Config config, HttpContext ctx)
     {
+        int? adminId = ctx.Session.GetInt32("admin_Id");
+        if (adminId is null)
+        {
+            return Results.Unauthorized();
+        }
+
 
         List<GetAll_Data> result = new();
 
@@ -71,7 +77,7 @@ class Bookings
             }
         }
 
-        return result;
+        return Results.Ok(result);
     }
 
     // POST BOOKING 
