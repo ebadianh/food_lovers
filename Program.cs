@@ -48,6 +48,7 @@ app.MapDelete("/users/{id}", Users.Delete);
 
 // CRUD methods for bookings
 app.MapGet("/bookings", Bookings.GetAll);
+app.MapGet("/bookings/{bookingsId}/totalcost", Bookings.GetTotalCostByBooking);
 app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 app.MapPut("/bookings/{bookingId:int}", Bookings.Put);
@@ -60,7 +61,7 @@ app.MapGet("/searchings/user", Searchings.GetAllPackagesForUser);
 
 // CRUD Methods for packages
 app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
-
+app.MapPost("/searchings/customizedPackage", Searchings.GetCustomizedPackage);
 
 app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
 app.MapGet("/search/hotels/filters", async (
@@ -129,13 +130,11 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS trip_packages;
         DROP TABLE IF EXISTS destinations;
         DROP TABLE IF EXISTS facilities;
-        DROP TABLE IF EXISTS room_types;
         DROP TABLE IF EXISTS countries;
         DROP TABLE IF EXISTS users;
         DROP TABLE IF EXISTS admins;
+        DROP TABLE IF EXISTS room_types;
 
-        -- db views dropped before created
-        DROP VIEW IF EXISTS Room_type;
 
         SET FOREIGN_KEY_CHECKS = 1; -- control for database foreign key constraints. example: cant drop a parent table if a child table references it. = 1 enables it
 
@@ -279,10 +278,33 @@ async Task db_reset_to_default(Config config)
             FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
             FOREIGN KEY (hotel_id, room_number) REFERENCES rooms(hotel_id, room_number) ON DELETE CASCADE
         );
-
         """;
 
-    string seed = """
+    string views = """
+        DROP VIEW IF EXISTS receipt;
+
+        CREATE VIEW receipt AS (
+        SELECT
+        b.id AS booking,
+        CONCAT(u.first_name, ' ', u.last_name) AS name,
+        tp.name AS package,
+        b.number_of_travelers AS travelers,
+        tp.price_per_person AS price_per_person,
+        DATEDIFF(b.checkout, b.checkin) AS nights,
+        (tp.price_per_person * b.number_of_travelers) 
+        + COALESCE(SUM(br.price_per_night * DATEDIFF(b.checkout, b.checkin)), 0) AS total
+        FROM bookings b
+        JOIN trip_packages tp ON b.package_id = tp.id
+        LEFT JOIN booked_rooms br ON b.id = br.booking_id
+        JOIN users AS u ON b.user_id = u.id
+        WHERE b.id = 1
+        GROUP BY b.id, u.first_name, u.last_name, tp.name, b.number_of_travelers, tp.price_per_person, b.checkin, b.checkout
+        );
+        """;
+
+
+
+    string seeds = """
 
         SET FOREIGN_KEY_CHECKS = 0;
         TRUNCATE TABLE booked_rooms;
@@ -482,7 +504,8 @@ async Task db_reset_to_default(Config config)
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, seed);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, views);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, seeds);
 }
 
 
