@@ -53,6 +53,9 @@ app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 app.MapGet("/bookings/user", Bookings.GetAllPackagesForUser); // get all packages booked by a user
 
+// CRUD examples (admin)
+app.MapGet("/admin/trips", Searchings.GetAllTrips);
+app.MapGet("/admin/trips/{id}", Searchings.GetAllTripsByID);
 
 
 
