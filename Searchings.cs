@@ -56,23 +56,23 @@ namespace server
         public record AdminHotelView(
             int Id,
             int DestinastionId,
-            string Name, 
+            string Name,
             string Description,
-            int Stars, 
+            int Stars,
             decimal DistanceToCenter
         );
 
-          public record HotelByID(
-            string Country,
-            string City,
-            int Id,
-            string HotelName,
-            int Stars,
-            decimal DistanceToCenter,
-            string Description,
-            int TotalRooms,
-            string RoomTypes
-        );
+        public record HotelByID(
+          string Country,
+          string City,
+          int Id,
+          string HotelName,
+          int Stars,
+          decimal DistanceToCenter,
+          string Description,
+          int TotalRooms,
+          string RoomTypes
+      );
 
         public record AdminTrips(
         int Id,
@@ -434,13 +434,13 @@ namespace server
             return Results.Ok(hotels);
         }
 
-       
-        public static async Task<List<AdminHotelView>> GetAdminView(Config config , HttpContext ctx)
-        {
-            var result = new List<AdminHotelView>(); 
 
-            using var conn = new MySqlConnection(config.db); 
-            await conn.OpenAsync(); 
+        public static async Task<List<AdminHotelView>> GetAdminView(Config config, HttpContext ctx)
+        {
+            var result = new List<AdminHotelView>();
+
+            using var conn = new MySqlConnection(config.db);
+            await conn.OpenAsync();
 
             string query = """
                 SELECT 
@@ -453,8 +453,8 @@ namespace server
                 FROM hotels 
             """;
 
-            using var cmd = new MySqlCommand(query, conn); 
-            using var reader = await cmd.ExecuteReaderAsync(); 
+            using var cmd = new MySqlCommand(query, conn);
+            using var reader = await cmd.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
             {
@@ -466,19 +466,19 @@ namespace server
                     reader.GetInt32(4), // Stars
                     reader.GetDecimal(5) // DistanceToCenter
                 ));
-            
+
             }
-             
-             return result; 
+
+            return result;
         }
 
         public static async Task<IResult> GetHotelByID(Config config, HttpContext ctx, int id)
         {
             int? adminId = ctx.Session.GetInt32("admin_id");
             if (adminId is null)
- 
+
                 return Results.Unauthorized();
- 
+
             string query = """
             SELECT
             c.name AS Country,
@@ -499,7 +499,37 @@ namespace server
             GROUP BY
             c.name, d.city, h.id, h.name, h.stars, h.distance_to_center, h.description;
             """;
- 
+
+            var parameters = new MySqlParameter[]
+            {
+                new("@id", id)
+            };
+
+
+            var result = new List<HotelByID>();
+
+            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+            while (await reader.ReadAsync())
+            {
+                var hotel = new HotelByID(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetInt32(2),
+                reader.GetString(3),
+                reader.GetInt32(4),
+                reader.GetDecimal(5),
+                reader.GetString(6),
+                reader.GetInt32(7),
+                reader.GetString(8)
+            );
+
+                result.Add(hotel);
+            }
+
+            return Results.Ok(result);
+
+        }
+
         public static async Task<IResult> GetAllTrips(Config config, HttpContext ctx)
         {
             int? adminId = ctx.Session.GetInt32("admin_id");
@@ -563,31 +593,6 @@ namespace server
             {
                 new("@id", id)
             };
- 
-            var result = new List<HotelByID>();
- 
-            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
-            while (await reader.ReadAsync())
-            {
-                var hotel = new HotelByID(
-                reader.GetString(0),
-                reader.GetString(1),
-                reader.GetInt32(2),
-                reader.GetString(3),
-                reader.GetInt32(4),
-                reader.GetDecimal(5),
-                reader.GetString(6),
-                reader.GetInt32(7),
-                reader.GetString(8)
-            );
- 
-                result.Add(hotel);
-            }
- 
-            return Results.Ok(result);
- 
-        }
-         
 
             var result = new List<TripByID>();
 
