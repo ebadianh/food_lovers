@@ -53,6 +53,27 @@ namespace server
             decimal? MaxPrice = null
         );
 
+        public record AdminHotelView(
+            int Id,
+            int DestinastionId,
+            string Name, 
+            string Description,
+            int Stars, 
+            decimal DistanceToCenter
+        );
+
+          public record HotelByID(
+            string Country,
+            string City,
+            int Id,
+            string HotelName,
+            int Stars,
+            decimal DistanceToCenter,
+            string Description,
+            int TotalRooms,
+            string RoomTypes
+        );
+
         public record AdminTrips(
         int Id,
         string Name,
@@ -413,6 +434,72 @@ namespace server
             return Results.Ok(hotels);
         }
 
+       
+        public static async Task<List<AdminHotelView>> GetAdminView(Config config , HttpContext ctx)
+        {
+            var result = new List<AdminHotelView>(); 
+
+            using var conn = new MySqlConnection(config.db); 
+            await conn.OpenAsync(); 
+
+            string query = """
+                SELECT 
+                    id,
+                    destination_id,
+                    name,
+                    description,
+                    stars,
+                    distance_to_center
+                FROM hotels 
+            """;
+
+            using var cmd = new MySqlCommand(query, conn); 
+            using var reader = await cmd.ExecuteReaderAsync(); 
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new AdminHotelView(
+                    reader.GetInt32(0), // Id
+                    reader.GetInt32(1), // DestinationId
+                    reader.GetString(2), // Name
+                    reader.IsDBNull(3) ? "" : reader.GetString(3), // Description
+                    reader.GetInt32(4), // Stars
+                    reader.GetDecimal(5) // DistanceToCenter
+                ));
+            
+            }
+             
+             return result; 
+        }
+
+        public static async Task<IResult> GetHotelByID(Config config, HttpContext ctx, int id)
+        {
+            int? adminId = ctx.Session.GetInt32("admin_id");
+            if (adminId is null)
+ 
+                return Results.Unauthorized();
+ 
+            string query = """
+            SELECT
+            c.name AS Country,
+            d.city,
+            h.id,
+            h.name AS HotelName,
+            h.stars,
+            h.distance_to_center,
+            h.description,
+            COUNT(r.room_number) AS TotalRooms,
+            GROUP_CONCAT(DISTINCT rt.type_name) AS RoomTypes
+            FROM hotels h
+            JOIN destinations d ON h.destination_id = d.id
+            JOIN countries c ON d.country_id = c.id
+            LEFT JOIN rooms r ON r.hotel_id = h.id
+            LEFT JOIN room_types rt ON rt.id = r.roomtype_id
+            WHERE h.id = @id
+            GROUP BY
+            c.name, d.city, h.id, h.name, h.stars, h.distance_to_center, h.description;
+            """;
+ 
         public static async Task<IResult> GetAllTrips(Config config, HttpContext ctx)
         {
             int? adminId = ctx.Session.GetInt32("admin_id");
@@ -476,6 +563,31 @@ namespace server
             {
                 new("@id", id)
             };
+ 
+            var result = new List<HotelByID>();
+ 
+            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+            while (await reader.ReadAsync())
+            {
+                var hotel = new HotelByID(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetInt32(2),
+                reader.GetString(3),
+                reader.GetInt32(4),
+                reader.GetDecimal(5),
+                reader.GetString(6),
+                reader.GetInt32(7),
+                reader.GetString(8)
+            );
+ 
+                result.Add(hotel);
+            }
+ 
+            return Results.Ok(result);
+ 
+        }
+         
 
             var result = new List<TripByID>();
 
