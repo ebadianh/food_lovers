@@ -53,14 +53,6 @@ class Bookings
         BookingStatus Status
     );
 
-    // DTO FOR POST BOOKINGS (doesn't take in id or userID)
-    public record Post_Args(
-     int PackageId,
-     DateTime Checkin,
-     DateTime Checkout,
-     int NumberOfTravelers,
-     string Status // in this record, status is defined as string. this is to be able to handle it inside post
- );
 
     // GET ALL BOOKINGS
     public static async Task<IResult> GetAll(Config config, HttpContext ctx)

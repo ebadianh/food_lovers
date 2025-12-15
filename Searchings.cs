@@ -171,7 +171,7 @@ namespace server
         /// <summary>
         /// Get all packages with optional filters.
         /// </summary>
-        public static async Task<List<GetAll_Data>> GetAllPackages(
+        
         public static async Task<List<PackageSearchResult>> GetAllPackagesFiltered(
             Config config,
             PackageFilterRequest filter)
@@ -350,52 +350,6 @@ namespace server
                 hotelsList
             );
         }
-
-
-
-
-        public static async Task<CustomizedPackage> GetCustomizedPackage(
-            Config config,
-            int packageId,
-            string? destinationIds = null,
-            string? hotelIds = null)
-        {
-            var destinationsList = string.IsNullOrWhiteSpace(destinationIds)
-            ? new List<int>()
-            : destinationIds.Split(',').Select(int.Parse).ToList();
-
-            var hotelsList = string.IsNullOrWhiteSpace(hotelIds)
-            ? new List<int>()
-            : hotelIds.Split(',').Select(int.Parse).ToList();
-
-
-            const string query = """
-                SELECT id, name, description, price_per_person
-                FROM trip_packages
-                WHERE id = @PackageId;
-                """;
-
-            await using var conn = new MySqlConnection(config.db);
-            await conn.OpenAsync();
-
-            await using var cmd = new MySqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@PackageId", packageId);
-
-            await using var reader = await cmd.ExecuteReaderAsync();
-            if (!await reader.ReadAsync())
-                throw new Exception("Package not found");
-
-            return new CustomizedPackage( 
-                reader.GetInt32(0), // ID
-                reader.GetString(1), // Name
-                reader.IsDBNull(2) ? "" : reader.GetString(2), // description
-                reader.GetDecimal(3), // Price_Per_Person
-                destinationsList,
-                hotelsList
-            );
-        }
-
-
 
         
         public static async Task<IResult> GetFilters(

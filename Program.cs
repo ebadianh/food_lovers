@@ -60,49 +60,10 @@ app.MapGet("/bookings/user", Bookings.GetAllPackagesForUser); // get all package
 app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
 app.MapPost("/searchings/customizedPackage", Searchings.GetCustomizedPackage);
 
-app.MapGet("/search/hotels", Searchings.GetAllHotelsByPreference);
-app.MapGet("/search/hotels/filters", async (
-    Config config,
-    string country,
-    DateTime checkin,
-    DateTime checkout,
-    int total_travelers,
-    string? city,
-    string? hotelName,
-    int? minStars,
-    double? maxDistanceToCenter,
-    string? facilities) =>
-{
-    List<string>? facilitiesList = null;
-    if (!string.IsNullOrWhiteSpace(facilities))
-    {
-        facilitiesList = facilities.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                   .Select(f => f.Trim())
-                                   .ToList();
-    }
-
-    var filter = new Searchings.ApplyFiltersRequest(
-        country,
-        checkin,
-        checkout,
-        total_travelers,
-        city,
-        hotelName,
-        facilitiesList,
-        minStars,
-        maxDistanceToCenter
-    );
-    
-    var hotels = await Searchings.GetAllHotelsByFilters(config, filter);
-    return Results.Ok(hotels);
-});
 
 
 
-app.MapGet("/searchingsbycountry", async (Config config, string? country) =>
-{
-    return await Searchings.GetAllPackagesByCountry(config, country);
-});
+
 app.MapGet("/packages", Searchings.GetPackages); // get all packages with optional filters
 //  GET http://localhost:5240/packages?country=Italy
 //  GET http://localhost:5240/packages?maxPrice=1000
