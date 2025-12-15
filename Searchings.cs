@@ -116,13 +116,13 @@ namespace server
             List<HotelFilterResult> result = new();
 
             string query = """
-                    SELECT
-                    c.name AS Country,
-                    d.city AS City,
-                    h.name AS HotelName,
-                    h.stars AS Stars,
-                    h.distance_to_center AS DistanceToCenter,
-                    GROUP_CONCAT(DISTINCT f.name ORDER BY f.name SEPARATOR ', ') AS Facilities
+                SELECT
+                c.name AS Country,
+                d.city AS City,
+                h.name AS HotelName,
+                h.stars AS Stars,
+                h.distance_to_center AS DistanceToCenter,
+                GROUP_CONCAT(DISTINCT f.name ORDER BY f.name SEPARATOR ', ') AS Facilities
                 FROM hotels h
                 INNER JOIN destinations AS d ON h.destination_id = d.id
                 INNER JOIN countries AS c ON d.country_id = c.id
@@ -131,12 +131,12 @@ namespace server
                 JOIN rooms AS r ON r.hotel_id = h.id
                 JOIN room_types AS rt ON rt.id = r.roomtype_id
                 LEFT JOIN booked_rooms AS br 
-                    ON br.hotel_id = r.hotel_id 
-                    AND br.room_number = r.room_number
+                ON br.hotel_id = r.hotel_id 
+                AND br.room_number = r.room_number
                 LEFT JOIN bookings AS b
-                    ON b.id = br.booking_id 
-                    AND b.checkin < @checkout 
-                    AND b.checkout > @checkin
+                ON b.id = br.booking_id 
+                AND b.checkin < @checkout 
+                AND b.checkout > @checkin
                 WHERE br.booking_id IS NULL
                 AND LOWER(c.name) = LOWER(@country)
             """;
@@ -629,9 +629,9 @@ namespace server
             return Results.Ok(result);
         }
 
-    
 
-    
+
+
 
         public static async Task<IResult> GetAllFacilities(Config config, HttpContext ctx)
         {
@@ -662,11 +662,11 @@ namespace server
 
             return Results.Ok(result);
         }
-               public static async Task<IResult> GetFacilityByID(Config config, HttpContext ctx, int id)
+        public static async Task<IResult> GetFacilityByID(Config config, HttpContext ctx, int id)
         {
             int? adminId = ctx.Session.GetInt32("admin_id");
             if (adminId is null) return Results.Unauthorized();
- 
+
             string query = """
             SELECT
             f.id AS FacilityId,
@@ -685,10 +685,10 @@ namespace server
             WHERE f.id = @id
             ORDER BY h.id;
             """;
- 
+
             var parameters = new MySqlParameter[] { new("@id", id) };
             var result = new List<FacilityByID>();
- 
+
             using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
             while (await reader.ReadAsync())
             {
@@ -703,11 +703,11 @@ namespace server
                     reader.GetString(7)
                 ));
             }
- 
+
             return Results.Ok(result);
         }
- 
- 
+
+
     }
-       
+
 }
