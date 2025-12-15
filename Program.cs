@@ -53,13 +53,16 @@ app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 app.MapGet("/bookings/user", Bookings.GetAllPackagesForUser); // get all packages booked by a user
 
+// CRUD examples (admin)
+app.MapGet("/admin/trips", Searchings.GetAllTrips);
+app.MapGet("/admin/trips/{id}", Searchings.GetAllTripsByID);
 
 app.MapGet("/admin/facilities", Searchings.GetAllFacilities);
 app.MapGet("/admin/facilities/{id}", Searchings.GetFacilityByID);
 
 // CRUD Methods for packages
 app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
-app.MapPost("/searchings/customizedPackage", Searchings.GetCustomizedPackage);
+app.MapGet("/searchings/customizedPackage", Searchings.GetCustomizedPackage);
 
 
 
@@ -72,6 +75,10 @@ app.MapGet("/packages", Searchings.GetPackages); // get all packages with option
 //  GET http://localhost:5240/packages?country=France&minStars=4&maxPrice=1500
 
 app.MapGet("/hotels", Searchings.GetFilters);
+app.MapGet("/admin/hotels", Searchings.GetAdminView); 
+app.MapGet("/admin/hotels/{id}", Searchings.GetHotelByID);
+
+
 // GET /hotels?country=Italy&minStars=4
 // GET /hotels?country=Italy&checkin=2025-07-01T15:00:00&checkout=2025-07-08T10:00:00&total_travelers=2
 // GET /hotels?city=Rome&facilities=Pool,Spa
