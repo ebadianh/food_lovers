@@ -93,6 +93,21 @@ namespace server
 
 
 
+        public record AdminFacilities(
+            int Id,
+            string Name
+
+        );
+        public record FacilityByID(
+            int FacilityId,
+            string FacilityName,
+            int HotelId,
+            string HotelName,
+            int Stars,
+            decimal DistanceToCenter,
+            string City,
+            string Country
+            );
 
         public static async Task<List<HotelFilterResult>> GetAllHotelsFiltered(
             Config config,
@@ -614,6 +629,85 @@ namespace server
             return Results.Ok(result);
         }
 
-    }
+    
 
+    
+
+        public static async Task<IResult> GetAllFacilities(Config config, HttpContext ctx)
+        {
+
+            int? adminId = ctx.Session.GetInt32("admin_id");
+            if (adminId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            List<AdminFacilities> result = new();
+
+            string query = """
+                SELECT
+                    id,
+                    name
+                FROM facilities;
+            """;
+
+            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query);
+            while (await reader.ReadAsync())
+            {
+                result.Add(new AdminFacilities(
+                    reader.GetInt32(0), //id
+                    reader.GetString(1) // name
+                ));
+            }
+
+            return Results.Ok(result);
+        }
+               public static async Task<IResult> GetFacilityByID(Config config, HttpContext ctx, int id)
+        {
+            int? adminId = ctx.Session.GetInt32("admin_id");
+            if (adminId is null) return Results.Unauthorized();
+ 
+            string query = """
+            SELECT
+            f.id AS FacilityId,
+            f.name AS FacilityName,
+            h.id AS HotelId,
+            h.name AS HotelName,
+            h.stars,
+            h.distance_to_center,
+            d.city,
+            c.name AS Country
+            FROM facilities f
+            LEFT JOIN accommodation_facilities af ON f.id = af.facility_id
+            LEFT JOIN hotels h ON af.hotel_id = h.id
+            LEFT JOIN destinations d ON h.destination_id = d.id
+            LEFT JOIN countries c ON d.country_id = c.id
+            WHERE f.id = @id
+            ORDER BY h.id;
+            """;
+ 
+            var parameters = new MySqlParameter[] { new("@id", id) };
+            var result = new List<FacilityByID>();
+ 
+            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+            while (await reader.ReadAsync())
+            {
+                result.Add(new FacilityByID(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetInt32(2),
+                    reader.GetString(3),
+                    reader.GetInt32(4),
+                    reader.GetDecimal(5),
+                    reader.GetString(6),
+                    reader.GetString(7)
+                ));
+            }
+ 
+            return Results.Ok(result);
+        }
+ 
+ 
+    }
+       
 }

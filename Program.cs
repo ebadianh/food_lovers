@@ -57,7 +57,8 @@ app.MapGet("/bookings/user", Bookings.GetAllPackagesForUser); // get all package
 app.MapGet("/admin/trips", Searchings.GetAllTrips);
 app.MapGet("/admin/trips/{id}", Searchings.GetAllTripsByID);
 
-
+app.MapGet("/admin/facilities", Searchings.GetAllFacilities);
+app.MapGet("/admin/facilities/{id}", Searchings.GetFacilityByID);
 
 // CRUD Methods for packages
 app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
