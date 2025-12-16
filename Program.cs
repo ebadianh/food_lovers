@@ -53,8 +53,12 @@ app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id:int}", Bookings.Delete);
 app.MapGet("/bookings/user", Bookings.GetAllPackagesForUser); // get all packages booked by a user
 
+// CRUD examples (admin)
+app.MapGet("/admin/trips", Searchings.GetAllTrips);
+app.MapGet("/admin/trips/{id}", Searchings.GetAllTripsByID);
 
-
+app.MapGet("/admin/facilities", Searchings.GetAllFacilities);
+app.MapGet("/admin/facilities/{id}", Searchings.GetFacilityByID);
 
 // CRUD Methods for packages
 app.MapGet("/searchings/SuggestedCountry", Searchings.GetSuggestedByCountry);
@@ -70,6 +74,10 @@ app.MapGet("/packages", Searchings.GetPackages); // get all packages with option
 //  GET http://localhost:5240/packages?search=street food
 
 app.MapGet("/hotels", Searchings.GetFilters);
+app.MapGet("/admin/hotels", Searchings.GetAdminView);
+app.MapGet("/admin/hotels/{id}", Searchings.GetHotelByID);
+
+
 // GET /hotels?country=Italy&minStars=4
 // GET /hotels?country=Italy&checkin=2025-07-01T15:00:00&checkout=2025-07-08T10:00:00&total_travelers=2
 // GET /hotels?city=Rome&facilities=Pool,Spa
@@ -276,15 +284,15 @@ async Task db_reset_to_default(Config config)
         tp.name AS package,
         b.number_of_travelers AS travelers,
         tp.price_per_person AS price_per_person,
-        DATEDIFF(b.checkout, b.checkin) AS nights,
+        DATEDIFF(b.trip_end_date, b.trip_start_date) AS nights,
         (tp.price_per_person * b.number_of_travelers) 
-        + COALESCE(SUM(br.price_per_night * DATEDIFF(b.checkout, b.checkin)), 0) AS total
+        + COALESCE(SUM(br.price_per_night * DATEDIFF(b.trip_end_date, b.trip_start_date)), 0) AS total
         FROM bookings b
         JOIN trip_packages tp ON b.package_id = tp.id
         LEFT JOIN booked_rooms br ON b.id = br.booking_id
         JOIN users AS u ON b.user_id = u.id
         WHERE b.id = 1
-        GROUP BY b.id, u.first_name, u.last_name, tp.name, b.number_of_travelers, tp.price_per_person, b.checkin, b.checkout
+        GROUP BY b.id, u.first_name, u.last_name, tp.name, b.number_of_travelers, tp.price_per_person, b.trip_start_date, b.trip_end_date
         );
         """;
 
@@ -607,7 +615,7 @@ async Task db_reset_to_default(Config config)
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
-    //await MySqlHelper.ExecuteNonQueryAsync(config.db, views);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, views);
     await MySqlHelper.ExecuteNonQueryAsync(config.db, seeds);
 }
 
