@@ -106,6 +106,7 @@ async Task db_reset_to_default(Config config)
         DROP TABLE IF EXISTS admins;
         DROP TABLE IF EXISTS stops;
         DROP TABLE IF EXISTS room_types;
+        DROP TABLE IF EXISTS booking_stops;
 
 
         SET FOREIGN_KEY_CHECKS = 1; -- control for database foreign key constraints. example: cant drop a parent table if a child table references it. = 1 enables it
@@ -232,24 +233,35 @@ async Task db_reset_to_default(Config config)
             id INT PRIMARY KEY AUTO_INCREMENT,
             user_id INT NOT NULL,
             package_id INT NOT NULL,
-            stop_order INT NOT NULL,
-            checkin DATETIME NOT NULL,
-            checkout DATETIME NOT NULL,
+            trip_start_date DATE NOT NULL,
+            trip_end_date DATE NOT NULL,
             number_of_travelers INT NOT NULL,
             status ENUM('pending', 'confirmed', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
             FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (package_id) REFERENCES trip_packages(id),
-            FOREIGN KEY (package_id, stop_order) REFERENCES stops(package_id, stop_order)
+            FOREIGN KEY (package_id) REFERENCES trip_packages(id)
+        );
+
+        -- BOOKING_STOPS table
+        CREATE TABLE booking_stops (
+            booking_id INT NOT NULL,
+            stop_order INT NOT NULL,
+            hotel_id INT NOT NULL,
+            checkin DATETIME NOT NULL,
+            checkout DATETIME NOT NULL,
+            PRIMARY KEY (booking_id, stop_order),
+            FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+            FOREIGN KEY (hotel_id) REFERENCES hotels(id)
         );
 
         -- BOOKED_ROOMS table
         CREATE TABLE booked_rooms (
             booking_id INT NOT NULL,
+            stop_order INT NOT NULL,
             hotel_id INT NOT NULL,
             room_number INT NOT NULL,
             price_per_night DECIMAL(10, 2) NOT NULL,
-            PRIMARY KEY (booking_id, hotel_id, room_number),
-            FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+            PRIMARY KEY (booking_id, stop_order, hotel_id, room_number),
+            FOREIGN KEY (booking_id, stop_order) REFERENCES booking_stops(booking_id, stop_order) ON DELETE CASCADE,
             FOREIGN KEY (hotel_id, room_number) REFERENCES rooms(hotel_id, room_number) ON DELETE CASCADE
         );
         """;
@@ -571,25 +583,31 @@ async Task db_reset_to_default(Config config)
         -- ===========================
         -- BOOKINGS
         -- ===========================
-        INSERT INTO bookings (id, user_id, package_id, stop_order, checkin, checkout, number_of_travelers, status) VALUES
-        (1, 1, 1, 1, '2025-07-01 15:00:00', '2025-07-08 10:00:00', 2, 'confirmed'),
-        (2, 2, 2, 1, '2025-09-10 12:00:00', '2025-09-15 09:00:00', 1, 'pending'),
-        (3, 3, 3, 1, '2025-11-05 18:00:00', '2025-11-11 08:00:00', 4, 'confirmed');
-        
+        INSERT INTO bookings (id, user_id, package_id, trip_start_date, trip_end_date, number_of_travelers, status) VALUES
+        (100, 1, 1, '2025-06-01', '2025-06-08', 6, 'pending');
+
+        -- ===========================
+        -- BOOKING_STOPS
+        -- ===========================
+        INSERT INTO booking_stops (booking_id, stop_order, hotel_id, checkin, checkout) VALUES
+        (100, 1, 1, '2025-06-01 15:00:00', '2025-06-04 10:00:00'),  -- Rome
+        (100, 2, 5, '2025-06-04 10:00:00', '2025-06-08 10:00:00'); -- Florence
+
         -- ===========================
         -- BOOKED ROOMS
         -- ===========================
-        INSERT INTO booked_rooms (booking_id, hotel_id, room_number, price_per_night) VALUES
-        (1, 1, 101, 150.00),  -- Booking 1: Hotel 1, Room 101
-        (1, 2, 201, 150.00),  -- Booking 1: Hotel 2, Room 201
-        (2, 3, 301, 110.00),  -- Booking 2: Hotel 3, Room 301
-        (3, 4, 401, 200.00);  -- Booking 3: Hotel 4, Room 401
+        INSERT INTO booked_rooms (booking_id, stop_order, hotel_id, room_number, price_per_night) VALUES
+        (100, 1, 1, 101, 150.00),  -- Booking 100: Rome, Hotel 1, Room 101
+        (100, 1, 1, 102, 150.00),  -- Booking 100: Rome, Hotel 1, Room 102
+        (100, 1, 1, 103, 200.00),  -- Booking 100: Rome, Hotel 1, Room 103
+        (100, 2, 5, 501, 180.00),  -- Booking 100: Florence, Hotel 5, Room 501
+        (100, 2, 5, 502, 180.00),  -- Booking 100: Florence, Hotel 5, Room 502
+        (100, 2, 5, 503, 220.00);  -- Booking 100: Florence, Hotel 5, Room 503
 
-    
     """;
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, tables);
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, views);
+    //await MySqlHelper.ExecuteNonQueryAsync(config.db, views);
     await MySqlHelper.ExecuteNonQueryAsync(config.db, seeds);
 }
 

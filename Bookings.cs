@@ -15,14 +15,20 @@ class Bookings
 {
 
     // DTO FOR GET ALL BOOKINGS ENDPOINT
-    public record GetAll_Data(
-        int Id,
-        int UserId,
-        int PackageId,
-        DateTime Checkin,
-        DateTime Checkout,
-        int NumberOfTravelers,
-        BookingStatus Status
+   public record GetAllData(
+            int BookingId,
+            DateTime TripStartDate,
+            DateTime TripEndDate,
+            int NumberOfTravelers,
+            BookingStatus Status,
+            int StopOrder,
+            DateTime Checkin,
+            DateTime Checkout,
+            string City,
+            string HotelName,
+            int RoomNumber,
+            string RoomType,
+            decimal PricePerNight
     );
     // DTO FOR GET ALL PACKAGES FOR USER ENDPOINT
     public record Get_All_Packages_For_User(
@@ -35,30 +41,27 @@ class Bookings
         BookingStatus Status
     );
     // DTO FOR POST BOOKINGS (doesn't take in id or userID, and auto sets status to pending)
-    public record Post_Args( //
-    /* TEST DATA:
-    {
-        "packageId": 1,
-        "checkin": "2025-06-01T15:00:00",
-        "checkout": "2025-06-04T10:00:00",
-        "numberOfTravelers": 2
-    }
-    */
-        int PackageId,
-        DateTime Checkin,
-        DateTime Checkout,
-        int NumberOfTravelers
+    public record RoomSelection(
+    int RoomNumber,
+    decimal PricePerNight
     );
-    
-        public record GetAllData(
-        string user,
-        int UserId,
-        int PackageId,
+
+    public record StopSelection(
+        int StopOrder,
+        int HotelId,
         DateTime Checkin,
         DateTime Checkout,
+        List<RoomSelection> Rooms
+    );
+    public record Post_Args(
+        int PackageId,
+        DateTime TripStart,
+        DateTime TripEnd,
         int NumberOfTravelers,
-        BookingStatus Status
+        List<StopSelection> Stops
     );
+
+        
 
 
     // GET ALL BOOKINGS
@@ -74,33 +77,65 @@ class Bookings
         List<GetAllData> result = new();
 
         string query = """
-            SELECT CONCAT(u.first_name, ' ', u.last_name) AS User, user_id, package_id, checkin, checkout, number_of_travelers, status
-            FROM bookings AS b
-            JOIN users AS u ON b.user_id = u.id;
+            SELECT 
+                b.id as booking_id,
+                b.trip_start_date,
+                b.trip_end_date,
+                b.number_of_travelers,
+                b.status,
+                bs.stop_order,
+                bs.checkin,
+                bs.checkout,
+                d.city,
+                h.name as hotel_name,
+                br.room_number,
+                rt.type_name as room_type,
+                br.price_per_night
+            FROM bookings b
+            JOIN booking_stops bs ON b.id = bs.booking_id
+            JOIN hotels h ON bs.hotel_id = h.id
+            JOIN destinations d ON h.destination_id = d.id
+            JOIN booked_rooms br ON b.id = br.booking_id AND bs.stop_order = br.stop_order
+            JOIN rooms r ON br.hotel_id = r.hotel_id AND br.room_number = r.room_number
+            JOIN room_types rt ON r.roomtype_id = rt.id
+            ORDER BY bs.stop_order, br.room_number;
         """;
 
         using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query))
         {
             while (reader.Read())
             {
-                string user = reader.GetString(0);
-                int userId = reader.GetInt32(1);
-                int packageId = reader.GetInt32(2);
-                DateTime checkin = reader.GetDateTime(3);
-                DateTime checkout = reader.GetDateTime(4);
-                int numberOfTravelers = reader.GetInt32(5);
-                string statusString = reader.GetString(6);
+                int bookingId = reader.GetInt32(0);
+                DateTime tripStartDate = reader.GetDateTime(1);
+                DateTime tripEndDate = reader.GetDateTime(2);
+                int travelers = reader.GetInt32(3);
+                string statusString = reader.GetString(4);
+                int stopOrder = reader.GetInt32(5);
+                DateTime checkin = reader.GetDateTime(6);
+                DateTime checkout = reader.GetDateTime(7);
+                string city = reader.GetString(8);
+                string hotelName = reader.GetString(9);
+                int roomNumber = reader.GetInt32(10);
+                string roomType = reader.GetString(11);
+                decimal pricePerNight = reader.GetDecimal(12);
+
 
                 BookingStatus status = Enum.Parse<BookingStatus>(statusString, ignoreCase: true);
 
                 result.Add(new GetAllData(
-                    user,
-                    userId,
-                    packageId,
+                    bookingId,
+                    tripStartDate,
+                    tripEndDate,
+                    travelers,
+                    status,
+                    stopOrder,
                     checkin,
                     checkout,
-                    numberOfTravelers,
-                    status
+                    city,
+                    hotelName,
+                    roomNumber,
+                    roomType,
+                    pricePerNight
                 ));
             }
         }
@@ -118,42 +153,75 @@ class Bookings
             return Results.Unauthorized();
         }
 
+        using var conn = new MySqlConnection(config.db);
+            await conn.OpenAsync();
 
-
-        // 3. Insert booking using session userId
-        const string insertQuery = """
-        INSERT INTO bookings (user_id, package_id, checkin, checkout, number_of_travelers, status)
-        VALUES (@user_id, @package_id, @checkin, @checkout, @number_of_travelers, 'pending');
-    """;
-
-        var insertParams = new MySqlParameter[]
+        using var bookingTransaction  = await conn.BeginTransactionAsync();
+        try
         {
-        new("@user_id", userId.Value),
-        new("@package_id", body.PackageId),
-        new("@checkin", body.Checkin),
-        new("@checkout", body.Checkout),
-        new("@number_of_travelers", body.NumberOfTravelers)
-        };
+            const string insertBooking = """
+            INSERT INTO bookings (user_id, package_id, trip_start_date, trip_end_date, number_of_travelers, status)
+            VALUES (@user_id, @package_id, @trip_start, @trip_end, @num_travelers, 'pending');
+            """;
 
-        await MySqlHelper.ExecuteNonQueryAsync(config.db, insertQuery, insertParams);
-
-        // 4. Retrieve last inserted ID
-        string idQuery = "SELECT LAST_INSERT_ID();";
-        object? scalar = await MySqlHelper.ExecuteScalarAsync(config.db, idQuery);
-
-        if (scalar != null && scalar != DBNull.Value)
-        {
-            int newId = Convert.ToInt32(scalar);
-
-            return Results.Ok(new
+            var bookingCmd = new MySqlCommand(insertBooking, conn, (MySqlTransaction)bookingTransaction);
+            bookingCmd.Parameters.AddRange(new[]
             {
-                id = newId,
-                status = "pending",
-                message = "Booking created successfully."
+            new MySqlParameter("@user_id", userId.Value),
+            new MySqlParameter("@package_id", body.PackageId),
+            new MySqlParameter("@trip_start", body.TripStart),
+            new MySqlParameter("@trip_end", body.TripEnd),
+            new MySqlParameter("@num_travelers", body.NumberOfTravelers)
             });
-        }
+            
+            await bookingCmd.ExecuteNonQueryAsync();
+            long bookingId = bookingCmd.LastInsertedId;
 
-        return Results.Problem("Could not retrieve booking ID after insert.");
+            string insertStop = """
+            INSERT INTO booking_stops (booking_id, stop_order, hotel_id, checkin, checkout)
+            VALUES (@booking_id, @stop_order, @hotel_id, @checkin, @checkout);
+            """;
+            string insertRoom = """
+            INSERT INTO booked_rooms (booking_id, stop_order, hotel_id, room_number, price_per_night)
+            VALUES (@booking_id, @stop_order, @hotel_id, @room_number, @price);
+            """;
+
+            foreach (var stop in body.Stops)
+            {
+                // Insert stop
+                var stopCmd = new MySqlCommand(insertStop, conn, (MySqlTransaction)bookingTransaction);
+                stopCmd.Parameters.AddRange(new[]
+                {
+                    new MySqlParameter("@booking_id", bookingId),
+                    new MySqlParameter("@stop_order", stop.StopOrder),
+                    new MySqlParameter("@hotel_id", stop.HotelId),
+                    new MySqlParameter("@checkin", stop.Checkin),
+                    new MySqlParameter("@checkout", stop.Checkout)
+                });
+                await stopCmd.ExecuteNonQueryAsync();
+            
+                foreach (var r in stop.Rooms)
+                {
+                    var roomCmd = new MySqlCommand(insertRoom, conn, (MySqlTransaction)bookingTransaction);
+                    roomCmd.Parameters.AddRange(new[]
+                    {
+                        new MySqlParameter("@booking_id", bookingId),
+                        new MySqlParameter("@stop_order", stop.StopOrder),
+                        new MySqlParameter("@hotel_id", stop.HotelId),
+                        new MySqlParameter("@room_number", r.RoomNumber),
+                        new MySqlParameter("@price", r.PricePerNight)
+                    });
+                    await roomCmd.ExecuteNonQueryAsync();
+                }
+            }
+            await bookingTransaction.CommitAsync();
+            return Results.Ok(new { bookingId });
+        }
+        catch
+        {
+            await bookingTransaction.RollbackAsync();
+            throw;
+        }
     }
 
     public static async Task<IResult> Delete(int id, HttpContext ctx, Config config)
