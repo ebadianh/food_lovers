@@ -12,9 +12,8 @@ namespace server
             string PackageName,
             string Description,
             decimal PricePerPerson,
-            int Stops,
-            string Countries,  // "Italy" or "France"
-            string Route
+            string Route,  // "Rome → Florence" or "Tokyo"
+            string Countries  // "Italy" or "France"
         );
 
         public record GetAllHotels
@@ -42,7 +41,6 @@ namespace server
             string Country,
             string City,
             string HotelName,
-            string Description,
             int Stars,
             double DistanceToCenter,
             string Facilities
@@ -51,6 +49,7 @@ namespace server
             string? Search = null,
             string? Country = null,
             string? City = null,
+            int? MinStars = null,
             decimal? MaxPrice = null
         );
 
@@ -117,14 +116,13 @@ namespace server
             List<HotelFilterResult> result = new();
 
             string query = """
-                    SELECT
-                    c.name AS Country,
-                    d.city AS City,
-                    h.name AS HotelName,
-                    h.description AS Description,
-                    h.stars AS Stars,
-                    h.distance_to_center AS DistanceToCenter,
-                    GROUP_CONCAT(DISTINCT f.name ORDER BY f.name SEPARATOR ', ') AS Facilities
+                SELECT
+                c.name AS Country,
+                d.city AS City,
+                h.name AS HotelName,
+                h.stars AS Stars,
+                h.distance_to_center AS DistanceToCenter,
+                GROUP_CONCAT(DISTINCT f.name ORDER BY f.name SEPARATOR ', ') AS Facilities
                 FROM hotels h
                 INNER JOIN destinations AS d ON h.destination_id = d.id
                 INNER JOIN countries AS c ON d.country_id = c.id
@@ -133,13 +131,12 @@ namespace server
                 JOIN rooms AS r ON r.hotel_id = h.id
                 JOIN room_types AS rt ON rt.id = r.roomtype_id
                 LEFT JOIN booked_rooms AS br 
-                    ON br.hotel_id = r.hotel_id 
-                    AND br.room_number = r.room_number
-                LEFT JOIN booking_stops AS bs
-                    ON br.booking_id = bs.booking_id 
-                    AND br.stop_order = bs.stop_order
-                    AND bs.checkin < @checkout 
-                    AND bs.checkout > @checkin
+                ON br.hotel_id = r.hotel_id 
+                AND br.room_number = r.room_number
+                LEFT JOIN bookings AS b
+                ON b.id = br.booking_id 
+                AND b.checkin < @checkout 
+                AND b.checkout > @checkin
                 WHERE br.booking_id IS NULL
                 AND LOWER(c.name) = LOWER(@country)
             """;
@@ -180,7 +177,7 @@ namespace server
                 cmd.Parameters.AddWithValue("@maxDistance", filter.MaxDistanceToCenter.Value);
             }
 
-            query += " GROUP BY h.id, h.name, h.description, c.name, d.city, h.stars, h.distance_to_center";
+            query += " GROUP BY h.id, h.name, c.name, d.city, h.stars, h.distance_to_center";
 
             if (filter.Facilities?.Count > 0)
             {
@@ -200,7 +197,7 @@ namespace server
             {
                 query += " HAVING SUM(rt.capacity) >= @total_travelers";
             }
-        
+
             query += " ORDER BY h.name ASC;";
             cmd.CommandText = query;
 
@@ -212,10 +209,9 @@ namespace server
                     reader.GetString(0),
                     reader.GetString(1),
                     reader.GetString(2),
-                    reader.GetString(3),
-                    reader.GetInt32(4),
-                    reader.GetDouble(5),
-                    reader.IsDBNull(6) ? "No facilities" : reader.GetString(6)
+                    reader.GetInt32(3),
+                    reader.GetDouble(4),
+                    reader.IsDBNull(5) ? "No facilities" : reader.GetString(5)
                 ));
             }
             return result;
@@ -245,15 +241,14 @@ namespace server
                     tp.name,
                     tp.description,
                     tp.price_per_person,
-                    COUNT(DISTINCT s.stop_order) AS Stops,
-                    GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS Countries,
-                    GROUP_CONCAT(d.city ORDER BY s.stop_order SEPARATOR ', ') AS Cities
+                    GROUP_CONCAT(DISTINCT d.city ORDER BY pi.stop_order SEPARATOR ' → ') AS Route,
+                    GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS Countries
                 FROM trip_packages AS tp
-                JOIN stops AS s ON tp.id = s.package_id
-                JOIN destinations AS d ON s.destination_id = d.id
+                JOIN package_itineraries AS pi ON tp.id = pi.package_id
+                JOIN destinations AS d ON pi.destination_id = d.id
                 JOIN countries AS c ON c.id = d.country_id
+                JOIN hotels AS h ON d.id = h.destination_id
                 WHERE 1 = 1
-
             """;
 
             using var conn = new MySqlConnection(config.db);
@@ -278,6 +273,13 @@ namespace server
                 query += " AND d.city LIKE @city";
                 cmd.Parameters.AddWithValue("@city", "%" + filter.City + "%");
             }
+
+            if (filter.MinStars.HasValue)
+            {
+                query += " AND h.stars >= @minStars";
+                cmd.Parameters.AddWithValue("@minStars", filter.MinStars.Value);
+            }
+
             if (filter.MaxPrice.HasValue)
             {
                 query += " AND tp.price_per_person <= @maxPrice";
@@ -296,9 +298,8 @@ namespace server
                     reader.GetString(1),
                     reader.IsDBNull(2) ? "" : reader.GetString(2),
                     reader.GetDecimal(3),
-                    reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
-                    reader.IsDBNull(5) ? "" : reader.GetString(5),
-                    reader.IsDBNull(6) ? "" : reader.GetString(6)
+                    reader.GetString(4),
+                    reader.GetString(5)
                 ));
             }
 
@@ -310,9 +311,10 @@ namespace server
             string? search = null,
             string? country = null,
             string? city = null,
+            int? minStars = null,
             decimal? maxPrice = null)
         {
-            var filter = new PackageFilterRequest(search, country, city, maxPrice);
+            var filter = new PackageFilterRequest(search, country, city, minStars, maxPrice);
             return Results.Ok(await GetAllPackagesFiltered(config, filter));
         }
 
@@ -330,8 +332,8 @@ namespace server
                     tp.price_per_person,
                     c.cuisine
                 FROM trip_packages tp
-                JOIN stops s ON tp.id = s.package_id
-                JOIN destinations d ON s.destination_id = d.id
+                JOIN package_itineraries pi ON tp.id = pi.package_id
+                JOIN destinations d ON pi.destination_id = d.id
                 JOIN countries c ON d.country_id = c.id
                 JOIN hotels AS h ON d.id = h.destination_id
                 WHERE c.name = @country;
