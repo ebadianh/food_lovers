@@ -448,8 +448,14 @@ namespace server
         }
 
 
-        public static async Task<List<AdminHotelView>> GetAdminView(Config config, HttpContext ctx)
+        public static async Task<IResult> GetAdminView(Config config, HttpContext ctx)
         {
+
+            int? adminId = ctx.Session.GetInt32("admin_id");
+            if (adminId is null)
+
+            return Results.Unauthorized();
+            
             var result = new List<AdminHotelView>();
 
             using var conn = new MySqlConnection(config.db);
@@ -482,7 +488,7 @@ namespace server
 
             }
 
-            return result;
+            return Results.Ok(result);
         }
 
         public static async Task<IResult> GetHotelByID(Config config, HttpContext ctx, int id)
