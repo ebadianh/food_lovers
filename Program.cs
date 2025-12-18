@@ -291,7 +291,6 @@ async Task db_reset_to_default(Config config)
         JOIN trip_packages tp ON b.package_id = tp.id
         LEFT JOIN booked_rooms br ON b.id = br.booking_id
         JOIN users AS u ON b.user_id = u.id
-        WHERE b.id = 100
         GROUP BY b.id, u.first_name, u.last_name, tp.name, b.number_of_travelers, tp.price_per_person, b.trip_start_date, b.trip_end_date
         );
         """;

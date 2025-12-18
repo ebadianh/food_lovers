@@ -15,21 +15,21 @@ class Bookings
 {
 
     // DTO FOR GET ALL BOOKINGS ENDPOINT
-   public record GetAllData(
-            int BookingId,
-            DateTime TripStartDate,
-            DateTime TripEndDate,
-            int NumberOfTravelers,
-            BookingStatus Status,
-            int StopOrder,
-            DateTime Checkin,
-            DateTime Checkout,
-            string City,
-            string HotelName,
-            int RoomNumber,
-            string RoomType,
-            decimal PricePerNight
-    );
+    public record GetAllData(
+             int BookingId,
+             DateTime TripStartDate,
+             DateTime TripEndDate,
+             int NumberOfTravelers,
+             BookingStatus Status,
+             int StopOrder,
+             DateTime Checkin,
+             DateTime Checkout,
+             string City,
+             string HotelName,
+             int RoomNumber,
+             string RoomType,
+             decimal PricePerNight
+     );
     // DTO FOR GET ALL PACKAGES FOR USER ENDPOINT
     public record Get_All_Packages_For_User(
         int BookingId,
@@ -74,7 +74,7 @@ class Bookings
         decimal total
     );
 
-    public record Put_Booking(      
+    public record Put_Booking(
         int PackageId,
         DateTime Checkin,
         DateTime Checkout,
@@ -83,16 +83,16 @@ class Bookings
 
     public record BookingDetails_Data(
         int Id,
-        string Status, 
-        string PackageName, 
-        string Country, 
-        string City, 
-        string HotelName, 
+        string Status,
+        string PackageName,
+        string Country,
+        string City,
+        string HotelName,
         decimal PricePerPerson
     );
 
 
-        
+
 
 
     // GET ALL BOOKINGS
@@ -185,9 +185,9 @@ class Bookings
         }
 
         using var conn = new MySqlConnection(config.db);
-            await conn.OpenAsync();
+        await conn.OpenAsync();
 
-        using var bookingTransaction  = await conn.BeginTransactionAsync();
+        using var bookingTransaction = await conn.BeginTransactionAsync();
         try
         {
             const string insertBooking = """
@@ -204,7 +204,7 @@ class Bookings
             new MySqlParameter("@trip_end", body.TripEnd),
             new MySqlParameter("@num_travelers", body.NumberOfTravelers)
             });
-            
+
             await bookingCmd.ExecuteNonQueryAsync();
             long bookingId = bookingCmd.LastInsertedId;
 
@@ -230,7 +230,7 @@ class Bookings
                     new MySqlParameter("@checkout", stop.Checkout)
                 });
                 await stopCmd.ExecuteNonQueryAsync();
-            
+
                 foreach (var r in stop.Rooms)
                 {
                     var roomCmd = new MySqlCommand(insertRoom, conn, (MySqlTransaction)bookingTransaction);
@@ -297,15 +297,15 @@ class Bookings
         // 4. return SUCCESS MESSAGE
         return Results.Ok(new { message = "Booking deleted successfully." });
     }
-public static async Task<IResult> GetAllPackagesForUser(Config config, HttpContext ctx)
-        {
-            int? userId = ctx.Session.GetInt32("user_id");
-            if (userId is null)
-                return Results.Unauthorized();
+    public static async Task<IResult> GetAllPackagesForUser(Config config, HttpContext ctx)
+    {
+        int? userId = ctx.Session.GetInt32("user_id");
+        if (userId is null)
+            return Results.Unauthorized();
 
-            List<Get_All_Packages_For_User> result = new();
+        List<Get_All_Packages_For_User> result = new();
 
-            const string query = """
+        const string query = """
                 SELECT 
                     b.id,
                     b.user_id,
@@ -325,42 +325,42 @@ public static async Task<IResult> GetAllPackagesForUser(Config config, HttpConte
                 ORDER BY b.id, bs.stop_order;
             """;
 
-            var parameters = new MySqlParameter[]
-                {
-                    new("@user_id", userId.Value)
-                };
-
-            using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
-            while (await reader.ReadAsync())
+        var parameters = new MySqlParameter[]
             {
-                int bookingId = reader.GetInt32(0);
-                int user_Id = reader.GetInt32(1);
-                int packageId = reader.GetInt32(2);
-                int stopOrder = reader.GetInt32(3);
-                DateTime checkin = reader.GetDateTime(4);
-                DateTime checkout = reader.GetDateTime(5);
-                int numberOfTravelers = reader.GetInt32(6);
-                string statusString = reader.GetString(7);
-                string city = reader.GetString(8);
-                string hotelName = reader.GetString(9);
-                BookingStatus status = Enum.Parse<BookingStatus>(statusString, ignoreCase: true);
+                    new("@user_id", userId.Value)
+            };
 
-                result.Add(new Get_All_Packages_For_User(
-                    bookingId,
-                    user_Id,
-                    packageId,
-                    stopOrder,
-                    checkin,
-                    checkout,
-                    numberOfTravelers,
-                    status,
-                    city,
-                    hotelName
-                ));
-            }
+        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+        while (await reader.ReadAsync())
+        {
+            int bookingId = reader.GetInt32(0);
+            int user_Id = reader.GetInt32(1);
+            int packageId = reader.GetInt32(2);
+            int stopOrder = reader.GetInt32(3);
+            DateTime checkin = reader.GetDateTime(4);
+            DateTime checkout = reader.GetDateTime(5);
+            int numberOfTravelers = reader.GetInt32(6);
+            string statusString = reader.GetString(7);
+            string city = reader.GetString(8);
+            string hotelName = reader.GetString(9);
+            BookingStatus status = Enum.Parse<BookingStatus>(statusString, ignoreCase: true);
 
-            return Results.Ok(result);
+            result.Add(new Get_All_Packages_For_User(
+                bookingId,
+                user_Id,
+                packageId,
+                stopOrder,
+                checkin,
+                checkout,
+                numberOfTravelers,
+                status,
+                city,
+                hotelName
+            ));
         }
+
+        return Results.Ok(result);
+    }
 
     public static async Task<List<Receipt>?> GetTotalCostByBooking(Config config, HttpContext ctx, int bookingsId)
     {
@@ -463,15 +463,15 @@ public static async Task<IResult> GetAllPackagesForUser(Config config, HttpConte
 
 
 
-// definerar datan som ska visas till user
+    // definerar datan som ska visas till user
 
-public static async Task<IResult> GetDetails(int id, Config config)
-    {  
+    public static async Task<IResult> GetDetails(int id, Config config)
+    {
         // förbered en lista för att hålla resultat 
-        var details = new List<BookingDetails_Data>() ;
+        var details = new List<BookingDetails_Data>();
 
-        using var conn = new MySqlConnection(config.db); 
-        await conn.OpenAsync(); 
+        using var conn = new MySqlConnection(config.db);
+        await conn.OpenAsync();
 
         string query = """
                 SELECT 
@@ -489,14 +489,14 @@ public static async Task<IResult> GetDetails(int id, Config config)
                 JOIN countries c ON d.country_id = c.id
                 JOIN hotels h ON d.id = h.destination_id
                 WHERE b.id = @id
-                """; 
+                """;
 
-            using var cmd = new MySqlCommand(query, conn); 
-            cmd.Parameters.AddWithValue("@id", id); 
+        using var cmd = new MySqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@id", id);
 
-            using var reader = await cmd.ExecuteReaderAsync(); 
+        using var reader = await cmd.ExecuteReaderAsync();
 
-            while (reader.Read())
+        while (reader.Read())
         {
             details.Add(new BookingDetails_Data(
                 reader.GetInt32(0),
@@ -506,17 +506,17 @@ public static async Task<IResult> GetDetails(int id, Config config)
                 reader.GetString(4),
                 reader.GetString(5),
                 reader.GetDecimal(6)
-            )); 
+            ));
         }
 
         // if sats om listan är tom 
         if (details.Count == 0)
         {
-            return Results.NotFound(new { error = "Booking not found."}); 
+            return Results.NotFound(new { error = "Booking not found." });
         }
 
-        return Results.Ok(details); 
+        return Results.Ok(details);
     }
-     
+
 }
 
